@@ -1,11 +1,16 @@
 local destroy_original = CopDamage.destroy
 function CopDamage:destroy(...)
-  local u_key = self._unit:base()._jokermon_key
-  local jokermon = u_key and Jokermon.settings.jokers[u_key]
-  if jokermon then
+  local key = self._unit:base()._jokermon_key
+  local joker = key and Jokermon.settings.jokers[key]
+  if joker then
     local info = HopLib:unit_info_manager():get_info(self._unit)
-    jokermon.hp = self._health
+    joker.hp_ratio = self._health_ratio
     Jokermon:save()
+  end
+  if Jokermon.panels[key] then
+    Jokermon.panels[key]:remove()
+    Jokermon.panels[key] = nil
+    Jokermon:layout_panels()
   end
   return destroy_original(...)
 end
