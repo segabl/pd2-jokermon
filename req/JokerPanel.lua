@@ -14,7 +14,8 @@ function JokerPanel:init(joker)
   self._parent_panel = managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2).panel
   self._panel = self._parent_panel:panel({
     w = 256,
-    h = 48
+    h = 48,
+    layer = 10
   })
 
   self._panel:rect({
@@ -97,8 +98,8 @@ function JokerPanel:init(joker)
     y = exp_bg:y(),
     layer = -10
   })
-  local needed_current, needed_next = Jokermon:get_needed_exp(joker.hp, joker.level), Jokermon:get_needed_exp(joker.hp, joker.level + 1)
-  self:update_exp((joker.exp - needed_current) / (needed_next - needed_current), true)
+  local needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
+  self:update_exp(joker.level == 100 and 1 or (joker.exp - needed_current) / (needed_next - needed_current), true)
 end
 
 function JokerPanel:set_position(x, y)
@@ -107,8 +108,8 @@ end
 
 function JokerPanel:update_level(level)
   self._lvl_text:set_text("Lv." .. level)
-  local _, _, w, _ = self._lvl_text:text_rect()
-  self._lvl_text:set_w(w)
+  local _, _, w, h = self._lvl_text:text_rect()
+  self._lvl_text:set_size(w, h)
   self._lvl_text:set_right(self._panel:w() - 4)
 end
 
@@ -118,7 +119,7 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
   if instant then
     self._hp_bar:set_color(hp_ratio_to_color(hp_ratio))
     self._hp_bar:set_w(max_w * hp_ratio)
-    self._hp_text:set_text(math.ceil(hp * hp_ratio * 10) .. "/" .. (hp * 10))
+    self._hp_text:set_text(math.ceil(hp * hp_ratio * 10) .. "/" .. math.ceil(hp * 10))
   else
     local start = self._hp_bar:w() / max_w
     self._hp_bar:animate(function ()
@@ -126,7 +127,7 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
         local f = math.lerp(start, hp_ratio, p)
         self._hp_bar:set_color(hp_ratio_to_color(f))
         self._hp_bar:set_w(max_w * f)
-        self._hp_text:set_text(math.ceil(hp * f * 10) .. "/" .. (hp * 10))
+        self._hp_text:set_text(math.ceil(hp * f * 10) .. "/" .. math.ceil(hp * 10))
       end)
     end)
   end

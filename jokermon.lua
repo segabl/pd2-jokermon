@@ -9,6 +9,7 @@ if not Jokermon then
     jokers = {}
   }
   Jokermon.panels = {}
+  Jokermon.units = {}
   
   getmetatable(Idstring()).construct = function(self, id)
     local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", id))
@@ -38,35 +39,69 @@ if not Jokermon then
     end
   end
 
-  function Jokermon:get_needed_exp(hp, level)
-    return hp + 20 * math.ceil(math.pow(math.min(level, 100), 2 + hp / 160))
+  function Jokermon:get_base_stats(joker)
+    return tweak_data.character[joker.tweak].jokermon_stats
+  end
+
+  function Jokermon:get_needed_exp(joker, level)
+    local exp_rate = self:get_base_stats(joker).exp_rate
+    return 10 * math.ceil(math.pow(math.min(level, 100), exp_rate))
   end
 
   function Jokermon:layout_panels()
     local y = 200
     for _, panel in pairs(Jokermon.panels) do
       panel:set_position(16, y)
-      y = y + panel._panel:h()
+      y = y + panel._panel:h() + 8
     end
+  end
+
+  function Jokermon:remove_panel(key)
+    if Jokermon.panels[key] then
+      Jokermon.panels[key]:remove()
+      Jokermon.panels[key] = nil
+      Jokermon:layout_panels()
+    end
+  end
+
+  function Jokermon:set_unit_stats(unit, joker)
+    if not alive(unit) then
+      return
+    end
+    local u_damage = unit:character_damage()
+    u_damage._HEALTH_INIT = joker.hp
+    u_damage._health_ratio = joker.hp_ratio
+    u_damage._health = u_damage._health_ratio * u_damage._HEALTH_INIT
+    u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
   end
 
   function Jokermon:give_exp(key, exp)
     local joker = Jokermon.settings.jokers[key]
     if joker and joker.level < 100 then
-      local needed_current, needed_next = Jokermon:get_needed_exp(joker.hp, joker.level), Jokermon:get_needed_exp(joker.hp, joker.level + 1)
+      local panel = Jokermon.panels[key]
+      local needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
       joker.exp = joker.exp + exp
+      local old_level = joker.level
       while joker.level < 100 and joker.exp >= needed_next do
-        -- TODO update stats
         joker.level = joker.level + 1
+
+        -- update stats
+        joker.hp = joker.hp + self:get_base_stats(joker).base_hp * ((joker.level - 1) / 99)
+        self:set_unit_stats(self.units[key], joker)
+        
+        if panel then
+          panel:update_hp(joker.hp, joker.hp_ratio)
+          panel:update_level(joker.level)
+          panel:update_exp(0, true)
+        end
+        needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
+      end
+      if joker.level ~= old_level then
         managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
-        Jokermon.panels[key]:update_level(joker.level)
-        Jokermon.panels[key]:update_exp(0, true)
-        needed_current, needed_next = Jokermon:get_needed_exp(joker.hp, joker.level), Jokermon:get_needed_exp(joker.hp, joker.level + 1)
       end
-      if joker.level == 100 then
-        joker.exp = Jokermon:get_needed_exp(joker.hp, 100)
+      if panel then
+        panel:update_exp(joker.level == 100 and 1 or (joker.exp - needed_current) / (needed_next - needed_current))
       end
-      Jokermon.panels[key]:update_exp((joker.exp - needed_current) / (needed_next - needed_current))
     end
   end
 
@@ -98,40 +133,32 @@ if not Jokermon then
         joker = Jokermon.settings.jokers[unit:base()._jokermon_key]
         info._nickname = joker.name
 
-        local u_damage = unit:character_damage()
-        u_damage._HEALTH_INIT = joker.hp
-        u_damage._health_ratio = joker.hp_ratio
-        u_damage._health = u_damage._health_ratio * u_damage._HEALTH_INIT
-        u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
-
-        local w_base = unit:inventory():equipped_unit():base()
-        w_base._damage = joker.dmg
+        Jokermon:set_unit_stats(unit, joker)
       else
         -- Create new Jokermon entry
         local uname = unit:name():key()
         if uname then
           unit:base()._jokermon_key = #Jokermon.settings.jokers + 1
-          local name = HopLib:unit_info_manager():get_info(unit):nickname()
           local difficulty = Global.game_settings and Global.game_settings.difficulty or "normal"
-          local level = 1--math.ceil(math.random(35, 50) * (tweak_data:difficulty_to_index(difficulty) / #tweak_data.difficulties))
-          local hp = unit:character_damage()._HEALTH_INIT
-          local w_base = unit:inventory():equipped_unit():base()
           joker = {
+            tweak = unit:base()._tweak_table,
             uname = uname,
-            name = name,
-            hp = hp,
+            name = HopLib:unit_info_manager():get_info(unit):nickname(),
+            hp = unit:character_damage()._HEALTH_INIT,
             hp_ratio = 1,
-            dmg = w_base._damage,
-            level = level,
-            exp = Jokermon:get_needed_exp(hp, level)
+            level = math.floor(1 + math.random(20, 70) * ((tweak_data:difficulty_to_index(difficulty) - 1) / (#tweak_data.difficulties - 1))),
+            exp = 0
           }
+          joker.exp = Jokermon:get_needed_exp(joker, joker.level)
           table.insert(Jokermon.settings.jokers, joker)
           Jokermon:save()
-          managers.chat:_receive_message(1, "JOKERMON", "Captured \"" .. name .. "\" Lv." .. level .. "!", tweak_data.system_chat_color)
+          managers.chat:_receive_message(1, "JOKERMON", "Captured \"" .. joker.name .. "\" Lv." .. joker.level .. "!", tweak_data.system_chat_color)
         end
       end
 
       if joker then
+        -- Save to units
+        Jokermon.units[unit:base()._jokermon_key] = unit
         -- Create panel
         Jokermon.panels[unit:base()._jokermon_key] = JokerPanel:new(joker)
         Jokermon:layout_panels()
@@ -141,20 +168,25 @@ if not Jokermon then
   end)
 
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
-    if unit:base()._jokermon_key then
-      local key = unit:base()._jokermon_key
-      Jokermon.panels[key]:update_hp(Jokermon.settings.jokers[key].hp, unit:character_damage()._health_ratio)
+    local key = unit:base()._jokermon_key
+    if key then
+      local joker = Jokermon.settings.jokers[key]
+      if joker then
+        joker.hp_ratio = unit:character_damage()._health_ratio
+        Jokermon.panels[key]:update_hp(joker.hp, joker.hp_ratio)
+      end
     end
   end)
 
   Hooks:Add("HopLibOnUnitDied", "HopLibOnUnitDiedJokermon", function(unit, damage_info)
-    if unit:base()._jokermon_key then
-      local key = unit:base()._jokermon_key
+    local key = unit:base()._jokermon_key
+    if key then
       local joker = Jokermon.settings.jokers[key]
-      managers.chat:_receive_message(1, "JOKERMON", joker.name .. " fainted!", tweak_data.system_chat_color)
-      Jokermon.panels[key]:remove()
-      Jokermon.panels[key] = nil
-      Jokermon:layout_panels()
+      if joker then
+        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " fainted!", tweak_data.system_chat_color)
+        Jokermon:remove_panel(key)
+        Jokermon.units[key] = nil
+      end
     elseif alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key then
       Jokermon:give_exp(damage_info.attacker_unit:base()._jokermon_key, unit:character_damage()._HEALTH_INIT)
     end
