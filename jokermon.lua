@@ -48,6 +48,14 @@ if not Jokermon then
     return 10 * math.ceil(math.pow(math.min(level, 100), exp_rate))
   end
 
+  function Jokermon:get_exp_ratio(joker)
+    if joker.level >= 100 then
+      return 1
+    end
+    local needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
+    return (joker.exp - needed_current) / (needed_next - needed_current)
+  end
+
   function Jokermon:layout_panels()
     local y = 200
     for _, panel in pairs(Jokermon.panels) do
@@ -79,10 +87,9 @@ if not Jokermon then
     local joker = Jokermon.settings.jokers[key]
     if joker and joker.level < 100 then
       local panel = Jokermon.panels[key]
-      local needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
       joker.exp = joker.exp + exp
       local old_level = joker.level
-      while joker.level < 100 and joker.exp >= needed_next do
+      while joker.level < 100 and self:get_exp_ratio(joker) >= 1 do
         joker.level = joker.level + 1
 
         -- update stats
@@ -94,13 +101,12 @@ if not Jokermon then
           panel:update_level(joker.level)
           panel:update_exp(0, true)
         end
-        needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
       end
       if joker.level ~= old_level then
         managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
       end
       if panel then
-        panel:update_exp(joker.level == 100 and 1 or (joker.exp - needed_current) / (needed_next - needed_current))
+        panel:update_exp(Jokermon:get_exp_ratio(joker))
       end
     end
   end
@@ -160,7 +166,11 @@ if not Jokermon then
         -- Save to units
         Jokermon.units[unit:base()._jokermon_key] = unit
         -- Create panel
-        Jokermon.panels[unit:base()._jokermon_key] = JokerPanel:new(joker)
+        local panel = JokerPanel:new(joker)
+        panel:update_hp(joker.hp, joker.hp_ratio, true)
+        panel:update_level(joker.level)
+        panel:update_exp(Jokermon:get_exp_ratio(joker), true)
+        Jokermon.panels[unit:base()._jokermon_key] = panel
         Jokermon:layout_panels()
       end
     end
