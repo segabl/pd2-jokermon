@@ -29,7 +29,7 @@ function JokerPanel:init(joker)
     name = "name",
     text = joker.name,
     font = tweak_data.menu.pd2_medium_font,
-    font_size = tweak_data.hud.name_label_font_size,
+    font_size = 16,
     color = Color.white,
     x = 4,
     y = 4
@@ -39,7 +39,7 @@ function JokerPanel:init(joker)
     name = "level",
     text = "Lv.1",
     font = tweak_data.menu.pd2_medium_font,
-    font_size = tweak_data.hud.name_label_font_size,
+    font_size = 16,
     color = Color.white,
     y = 4
   })
@@ -60,9 +60,24 @@ function JokerPanel:init(joker)
     w = hp_bg:w(),
     h = hp_bg:h(),
     x = hp_bg:x(),
+    y = hp_bg:y(),
+    layer = -10
+  })
+  self._hp_text = self._panel:text({
+    name = "hp_text",
+    text = "1/1",
+    font = tweak_data.menu.small_font,
+    font_size = 9,
+    align = "center",
+    w = hp_bg:w(),
+    h = hp_bg:h(),
+    x = hp_bg:x(),
     y = hp_bg:y()
   })
-  self:update_hp(joker.hp_ratio, true)
+  local _, _, _, h = self._hp_text:text_rect()
+  self._hp_text:set_h(h)
+  self._hp_text:set_center_y(hp_bg:y() + hp_bg:h() / 2)
+  self:update_hp(joker.hp, joker.hp_ratio, true)
 
   local exp_bg = self._panel:rect({
     name = "exp_bg",
@@ -79,7 +94,8 @@ function JokerPanel:init(joker)
     w = exp_bg:w(),
     h = exp_bg:h(),
     x = exp_bg:x(),
-    y = exp_bg:y()
+    y = exp_bg:y(),
+    layer = -10
   })
   local needed_current, needed_next = Jokermon:get_needed_exp(joker.hp, joker.level), Jokermon:get_needed_exp(joker.hp, joker.level + 1)
   self:update_exp((joker.exp - needed_current) / (needed_next - needed_current), true)
@@ -96,30 +112,32 @@ function JokerPanel:update_level(level)
   self._lvl_text:set_right(self._panel:w() - 4)
 end
 
-function JokerPanel:update_hp(hp_ratio, instant)
+function JokerPanel:update_hp(hp, hp_ratio, instant)
+  self._hp_bar:stop()
   local max_w = (self._panel:w() - 8)
   if instant then
     self._hp_bar:set_color(hp_ratio_to_color(hp_ratio))
     self._hp_bar:set_w(max_w * hp_ratio)
+    self._hp_text:set_text(math.ceil(hp * hp_ratio * 10) .. "/" .. (hp * 10))
   else
-    self._hp_bar:stop()
     local start = self._hp_bar:w() / max_w
     self._hp_bar:animate(function ()
       over(0.25, function (p)
         local f = math.lerp(start, hp_ratio, p)
         self._hp_bar:set_color(hp_ratio_to_color(f))
         self._hp_bar:set_w(max_w * f)
+        self._hp_text:set_text(math.ceil(hp * f * 10) .. "/" .. (hp * 10))
       end)
     end)
   end
 end
 
 function JokerPanel:update_exp(exp_ratio, instant)
+  self._exp_bar:stop()
   local max_w = (self._panel:w() - 8)
   if instant then
     self._exp_bar:set_w(max_w * exp_ratio)
   else
-    self._exp_bar:stop()
     local start = self._exp_bar:w() / max_w
     self._exp_bar:animate(function ()
       over(0.5, function (p)

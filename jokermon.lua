@@ -143,7 +143,7 @@ if not Jokermon then
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
     if unit:base()._jokermon_key then
       local key = unit:base()._jokermon_key
-      Jokermon.panels[key]:update_hp(unit:character_damage()._health_ratio)
+      Jokermon.panels[key]:update_hp(Jokermon.settings.jokers[key].hp, unit:character_damage()._health_ratio)
     end
   end)
 
