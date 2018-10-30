@@ -7,7 +7,7 @@ local hp_color = {
 }
 
 local function hp_ratio_to_color(hp_ratio)
-  return hp_ratio <= 0.25 and hp_color.critical or hp_ratio <= 0.5 and hp_color.low or hp_color.normal
+  return hp_ratio <= 0.15 and hp_color.critical or hp_ratio <= 0.5 and hp_color.low or hp_color.normal
 end
 
 function JokerPanel:init(joker)
