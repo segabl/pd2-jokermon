@@ -115,6 +115,7 @@ end
 
 function JokerPanel:update_hp(hp, hp_ratio, instant)
   self._hp_bar:stop()
+  hp_ratio = math.max(0, math.min(1, hp_ratio))
   local max_w = (self._panel:w() - 8)
   if instant then
     self._hp_bar:set_color(hp_ratio_to_color(hp_ratio))
@@ -135,6 +136,7 @@ end
 
 function JokerPanel:update_exp(exp_ratio, instant)
   self._exp_bar:stop()
+  exp_ratio = math.max(0, math.min(1, exp_ratio))
   local max_w = (self._panel:w() - 8)
   if instant then
     self._exp_bar:set_w(max_w * exp_ratio)
