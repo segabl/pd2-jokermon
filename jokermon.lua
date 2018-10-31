@@ -10,31 +10,34 @@ if not Jokermon then
   }
   Jokermon.panels = {}
   Jokermon.units = {}
+  Jokermon.queued_keys = {}
   
   getmetatable(Idstring()).construct = function(self, id)
     local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", id))
     return xml and xml.id
   end
 
-  function Jokermon:spawn(i)
-    local v = self.settings.jokers[i]
-    if not v then
-      return
-    end
-    if v.hp_ratio > 0 then
-      local ids = Idstring:construct(v.uname)
+  function Jokermon:spawn(joker, index, player_unit)
+    if joker.hp_ratio > 0 then
+      local ids = Idstring:construct(joker.uname)
       if ids and PackageManager:unit_data(ids) then
-        local player_unit = managers.player:local_player()
-        local joker = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
-        joker:movement():set_team({ id = "law1", foes = {}, friends = {} })
-        joker:base()._jokermon_key = i
-        if Keepers then
-          Keepers.joker_names[player_unit:network():peer():id()] = v.name
+        if index then
+          table.insert(self.queued_keys, index)
         end
-        managers.groupai:state():convert_hostage_to_criminal(joker, player_unit)
+        if Network:is_client() then
+          LuaNetworking:SendToPeer(1, "request_joker_spawn", json.encode(joker))
+          return true
+        end
+        player_unit = player_unit or managers.player:local_player()
+        local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
+        unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
+        if Keepers then
+          Keepers.joker_names[player_unit:network():peer():id()] = joker.name
+        end
+        managers.groupai:state():convert_hostage_to_criminal(unit, player_unit ~= managers.player:local_player() and player_unit)
         return true
-      else
-        managers.chat:_receive_message(1, "JOKERMON", v.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
+      elseif index then
+        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
       end
     end
   end
@@ -133,45 +136,50 @@ if not Jokermon then
   Hooks:Add("HopLibOnEnemyConverted", "HopLibOnEnemyConvertedJokermon", function(unit, player_unit)
     if player_unit == managers.player:local_player() then
       local joker
-      if unit:base()._jokermon_key then
+
+      local key = Jokermon.queued_keys[1]
+      
+      if key then
         -- Use existing Jokermon entry
+        table.remove(Jokermon.queued_keys, 1)
+
         local info = HopLib:unit_info_manager():get_info(unit)
-        joker = Jokermon.settings.jokers[unit:base()._jokermon_key]
+        joker = Jokermon.settings.jokers[key]
         info._nickname = joker.name
 
         Jokermon:set_unit_stats(unit, joker)
       else
         -- Create new Jokermon entry
-        local uname = unit:name():key()
-        if uname then
-          unit:base()._jokermon_key = #Jokermon.settings.jokers + 1
-          local difficulty = Global.game_settings and Global.game_settings.difficulty or "normal"
-          joker = {
-            tweak = unit:base()._tweak_table,
-            uname = uname,
-            name = HopLib:unit_info_manager():get_info(unit):nickname(),
-            hp = unit:character_damage()._HEALTH_INIT,
-            hp_ratio = 1,
-            level = math.floor(1 + math.random(20, 70) * ((tweak_data:difficulty_to_index(difficulty) - 1) / (#tweak_data.difficulties - 1))),
-            exp = 0
-          }
-          joker.exp = Jokermon:get_needed_exp(joker, joker.level)
-          table.insert(Jokermon.settings.jokers, joker)
-          Jokermon:save()
-          managers.chat:_receive_message(1, "JOKERMON", "Captured \"" .. joker.name .. "\" Lv." .. joker.level .. "!", tweak_data.system_chat_color)
-        end
+        key = #Jokermon.settings.jokers + 1
+        local difficulty = Global.game_settings and Global.game_settings.difficulty or "normal"
+        joker = {
+          tweak = unit:base()._tweak_table,
+          uname = unit:name():key(),
+          name = HopLib:unit_info_manager():get_info(unit):nickname(),
+          hp = unit:character_damage()._HEALTH_INIT,
+          hp_ratio = 1,
+          level = math.floor(1 + math.random(20, 70) * ((tweak_data:difficulty_to_index(difficulty) - 1) / (#tweak_data.difficulties - 1))),
+          exp = 0
+        }
+        joker.exp = Jokermon:get_needed_exp(joker, joker.level)
+        table.insert(Jokermon.settings.jokers, joker)
+        Jokermon:save()
+        managers.chat:_receive_message(1, "JOKERMON", "Captured \"" .. joker.name .. "\" Lv." .. joker.level .. "!", tweak_data.system_chat_color)
       end
 
       if joker then
         -- Save to units
-        Jokermon.units[unit:base()._jokermon_key] = unit
+        Jokermon.units[key] = unit
         -- Create panel
         local panel = JokerPanel:new(joker)
         panel:update_hp(joker.hp, joker.hp_ratio, true)
         panel:update_level(joker.level)
         panel:update_exp(Jokermon:get_exp_ratio(joker), true)
-        Jokermon.panels[unit:base()._jokermon_key] = panel
+        
+        Jokermon.panels[key] = panel
         Jokermon:layout_panels()
+
+        unit:base()._jokermon_key = key
       end
     end
 
@@ -179,33 +187,26 @@ if not Jokermon then
 
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
     local key = unit:base()._jokermon_key
-    if key then
-      local joker = Jokermon.settings.jokers[key]
-      if joker then
-        joker.hp_ratio = unit:character_damage()._health_ratio
-        Jokermon.panels[key]:update_hp(joker.hp, joker.hp_ratio)
-      end
+    local joker = key and Jokermon.settings.jokers[key]
+    if joker then
+      joker.hp_ratio = unit:character_damage()._health_ratio
+      Jokermon.panels[key]:update_hp(joker.hp, joker.hp_ratio)
     end
   end)
 
   Hooks:Add("HopLibOnUnitDied", "HopLibOnUnitDiedJokermon", function(unit, damage_info)
-    local key = unit:base()._jokermon_key
-    if key then
-      local joker = Jokermon.settings.jokers[key]
-      if joker then
-        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " fainted!", tweak_data.system_chat_color)
-        Jokermon:remove_panel(key)
-        Jokermon.units[key] = nil
-      end
-    elseif alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key then
+    if alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key then
       Jokermon:give_exp(damage_info.attacker_unit:base()._jokermon_key, unit:character_damage()._HEALTH_INIT)
     end
   end)
-    
   
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
     if id == "request_joker_spawn" then
-      data = json.decode(data)
+      local joker = json.decode(data)
+      local player_unit = LuaNetworking:GetPeers()[sender]:unit()
+      if alive(unit) then
+        Jokermon:spawn(joker, nil, player_unit)
+      end
     end
   end)
   

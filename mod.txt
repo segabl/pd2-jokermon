@@ -9,8 +9,8 @@
   "updates" : [ { "identifier" : "jokermon" } ],
   "dependencies" : [ "hoplib" ],
   "hooks" : [
+    { "hook_id" : "lib/managers/group_ai_states/groupaistatebase", "script_path" : "jokermon.lua" },
     { "hook_id" : "lib/managers/playermanager", "script_path" : "jokermon.lua" },
-    { "hook_id" : "lib/tweak_data/charactertweakdata", "script_path" : "jokermon.lua" },
-    { "hook_id" : "lib/units/enemies/cop/copdamage", "script_path" : "jokermon.lua" }
+    { "hook_id" : "lib/tweak_data/charactertweakdata", "script_path" : "jokermon.lua" }
   ]
 }
