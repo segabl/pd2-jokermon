@@ -67,6 +67,16 @@ if not Jokermon then
     end
   end
 
+  function Jokermon:add_panel(key, joker)
+    local panel = JokerPanel:new(managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2).panel)
+    panel:update_name(joker.name)
+    panel:update_hp(joker.hp, joker.hp_ratio, true)
+    panel:update_level(joker.level)
+    panel:update_exp(Jokermon:get_exp_ratio(joker), true)
+    Jokermon.panels[key] = panel
+    Jokermon:layout_panels()
+  end
+
   function Jokermon:remove_panel(key)
     if Jokermon.panels[key] then
       Jokermon.panels[key]:remove()
@@ -151,14 +161,13 @@ if not Jokermon then
       else
         -- Create new Jokermon entry
         key = #Jokermon.settings.jokers + 1
-        local difficulty = Global.game_settings and Global.game_settings.difficulty or "normal"
         joker = {
           tweak = unit:base()._tweak_table,
           uname = unit:name():key(),
           name = HopLib:unit_info_manager():get_info(unit):nickname(),
           hp = unit:character_damage()._HEALTH_INIT,
           hp_ratio = 1,
-          level = math.floor(1 + math.random(20, 70) * ((tweak_data:difficulty_to_index(difficulty) - 1) / (#tweak_data.difficulties - 1))),
+          level = math.floor(1 + math.random(20, 70) * (tweak_data:difficulty_to_index(Global.game_settings.difficulty) / #tweak_data.difficulties)),
           exp = 0
         }
         joker.exp = Jokermon:get_needed_exp(joker, joker.level)
@@ -170,16 +179,9 @@ if not Jokermon then
       if joker then
         -- Save to units
         Jokermon.units[key] = unit
-        -- Create panel
-        local panel = JokerPanel:new(joker)
-        panel:update_hp(joker.hp, joker.hp_ratio, true)
-        panel:update_level(joker.level)
-        panel:update_exp(Jokermon:get_exp_ratio(joker), true)
-        
-        Jokermon.panels[key] = panel
-        Jokermon:layout_panels()
-
         unit:base()._jokermon_key = key
+        -- Create panel
+        Jokermon:add_panel(key, joker)
       end
     end
 

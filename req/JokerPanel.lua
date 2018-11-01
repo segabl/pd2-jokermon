@@ -10,8 +10,8 @@ local function hp_ratio_to_color(hp_ratio)
   return hp_ratio <= 0.15 and hp_color.critical or hp_ratio <= 0.5 and hp_color.low or hp_color.normal
 end
 
-function JokerPanel:init(joker)
-  self._parent_panel = managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2).panel
+function JokerPanel:init(panel)
+  self._parent_panel = panel
   self._panel = self._parent_panel:panel({
     w = 256,
     h = 48,
@@ -26,9 +26,9 @@ function JokerPanel:init(joker)
     layer = -100
   })
 
-  local name_text = self._panel:text({
+  self._name_text = self._panel:text({
     name = "name",
-    text = joker.name,
+    text = "",
     font = tweak_data.menu.pd2_medium_font,
     font_size = 16,
     color = Color.white,
@@ -38,7 +38,7 @@ function JokerPanel:init(joker)
 
   self._lvl_text = self._panel:text({
     name = "level",
-    text = "Lv.1",
+    text = "",
     font = tweak_data.menu.pd2_medium_font,
     font_size = 16,
     color = Color.white,
@@ -65,18 +65,16 @@ function JokerPanel:init(joker)
   })
   self._hp_text = self._panel:text({
     name = "hp_text",
-    text = "1/1",
+    text = "",
     font = tweak_data.menu.small_font,
     font_size = 9,
     align = "center",
+    vertical = "center",
     w = hp_bg:w(),
     h = hp_bg:h(),
     x = hp_bg:x(),
     y = hp_bg:y()
   })
-  local _, _, _, h = self._hp_text:text_rect()
-  self._hp_text:set_h(h)
-  self._hp_text:set_center_y(hp_bg:y() + hp_bg:h() / 2)
   self._hp_ratio = 1
 
   local exp_bg = self._panel:rect({
@@ -102,6 +100,10 @@ end
 
 function JokerPanel:set_position(x, y)
   self._panel:set_position(x, y)
+end
+
+function JokerPanel:update_name(name)
+  self._name_text:set_text(name)
 end
 
 function JokerPanel:update_level(level)
