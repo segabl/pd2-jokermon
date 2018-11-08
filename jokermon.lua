@@ -6,11 +6,17 @@ if not Jokermon then
   Jokermon.mod_path = ModPath
   Jokermon.save_path = SavePath
   Jokermon.settings = {
-    jokers = {}
+    panel_x_pos = 0.03,
+    panel_y_pos = 0.2,
+    panel_spacing = 8,
+    panel_layout = 1,
+    show_messages = true
   }
+  Jokermon.jokers = {}
   Jokermon.panels = {}
   Jokermon.units = {}
   Jokermon.queued_keys = {}
+  Jokermon._num_panels = 0
   
   getmetatable(Idstring()).construct = function(self, id)
     local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", id))
@@ -36,7 +42,7 @@ if not Jokermon then
         end
         managers.groupai:state():convert_hostage_to_criminal(unit, player_unit ~= managers.player:local_player() and player_unit)
         return true
-      elseif index then
+      elseif index and self.settings.show_messages then
         managers.chat:_receive_message(1, "JOKERMON", joker.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
       end
     end
@@ -60,10 +66,19 @@ if not Jokermon then
   end
 
   function Jokermon:layout_panels()
-    local y = 200
+    local i = 0
+    local x, y
+    local x_pos, y_pos, spacing = self.settings.panel_x_pos, self.settings.panel_y_pos, self.settings.panel_spacing
     for _, panel in pairs(Jokermon.panels) do
-      panel:set_position(16, y)
-      y = y + panel._panel:h() + 8
+      if self.settings.panel_layout == 1 then
+        x = (panel._parent_panel:w() - panel._panel:w()) * x_pos
+        y = (panel._parent_panel:h() - panel._panel:h() * self._num_panels - spacing * (self._num_panels - 1)) * y_pos + (panel._panel:h() + spacing) * i
+      else
+        x = (panel._parent_panel:w() - panel._panel:w() * self._num_panels - spacing * (self._num_panels - 1)) * x_pos + (panel._panel:w() + spacing) * i
+        y = (panel._parent_panel:h() - panel._panel:h()) * y_pos
+      end
+      panel:set_position(x, y)
+      i = i + 1
     end
   end
 
@@ -72,15 +87,19 @@ if not Jokermon then
     panel:update_name(joker.name)
     panel:update_hp(joker.hp, joker.hp_ratio, true)
     panel:update_level(joker.level)
-    panel:update_exp(Jokermon:get_exp_ratio(joker), true)
-    Jokermon.panels[key] = panel
-    Jokermon:layout_panels()
+    panel:update_exp(self:get_exp_ratio(joker), true)
+    if not self.panels[key] then
+      self._num_panels = self._num_panels + 1
+    end
+    self.panels[key] = panel
+    self:layout_panels()
   end
 
   function Jokermon:remove_panel(key)
     if Jokermon.panels[key] then
       Jokermon.panels[key]:remove()
       Jokermon.panels[key] = nil
+      self._num_panels = self._num_panels - 1
       Jokermon:layout_panels()
     end
   end
@@ -97,7 +116,7 @@ if not Jokermon then
   end
 
   function Jokermon:give_exp(key, exp)
-    local joker = Jokermon.settings.jokers[key]
+    local joker = Jokermon.jokers[key]
     if joker and joker.level < 100 then
       local panel = Jokermon.panels[key]
       joker.exp = joker.exp + exp
@@ -115,7 +134,7 @@ if not Jokermon then
           panel:update_exp(0, true)
         end
       end
-      if joker.level ~= old_level then
+      if joker.level ~= old_level and self.settings.show_messages then
         managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
       end
       if panel then
@@ -124,22 +143,34 @@ if not Jokermon then
     end
   end
 
-  function Jokermon:save()
-    local file = io.open(self.save_path .. "jokermon.txt", "w+")
+  function Jokermon:save(full_save)
+    local file = io.open(self.save_path .. "jokermon_settings.txt", "w+")
     if file then
       file:write(json.encode(self.settings))
       file:close()
     end
+    if full_save then
+      file = io.open(self.save_path .. "jokermon.txt", "w+")
+      if file then
+        file:write(json.encode(self.jokers))
+        file:close()
+      end
+    end
   end
   
   function Jokermon:load()
-    local file = io.open(self.save_path .. "jokermon.txt", "r")
+    local file = io.open(self.save_path .. "jokermon_settings.txt", "r")
     if file then
       local data = json.decode(file:read("*all"))
       file:close()
       for k, v in pairs(data) do
         self.settings[k] = v
       end
+    end
+    file = io.open(self.save_path .. "jokermon.txt", "r")
+    if file then
+      self.jokers = json.decode(file:read("*all"))
+      file:close()
     end
   end
   
@@ -154,13 +185,13 @@ if not Jokermon then
         table.remove(Jokermon.queued_keys, 1)
 
         local info = HopLib:unit_info_manager():get_info(unit)
-        joker = Jokermon.settings.jokers[key]
+        joker = Jokermon.jokers[key]
         info._nickname = joker.name
 
         Jokermon:set_unit_stats(unit, joker)
       else
         -- Create new Jokermon entry
-        key = #Jokermon.settings.jokers + 1
+        key = #Jokermon.jokers + 1
         joker = {
           tweak = unit:base()._tweak_table,
           uname = unit:name():key(),
@@ -171,9 +202,11 @@ if not Jokermon then
           exp = 0
         }
         joker.exp = Jokermon:get_needed_exp(joker, joker.level)
-        table.insert(Jokermon.settings.jokers, joker)
-        Jokermon:save()
-        managers.chat:_receive_message(1, "JOKERMON", "Captured \"" .. joker.name .. "\" Lv." .. joker.level .. "!", tweak_data.system_chat_color)
+        table.insert(Jokermon.jokers, joker)
+        Jokermon:save(true)
+        if Jokermon.settings.show_messages then
+          managers.chat:_receive_message(1, "JOKERMON", "Captured \"" .. joker.name .. "\" Lv." .. joker.level .. "!", tweak_data.system_chat_color)
+        end
       end
 
       if joker then
@@ -187,9 +220,11 @@ if not Jokermon then
 
   end)
 
+  Jokermon:load()
+
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
     local key = unit:base()._jokermon_key
-    local joker = key and Jokermon.settings.jokers[key]
+    local joker = key and Jokermon.jokers[key]
     if joker then
       joker.hp_ratio = unit:character_damage()._health_ratio
       Jokermon.panels[key]:update_hp(joker.hp, joker.hp_ratio)
@@ -211,8 +246,6 @@ if not Jokermon then
       end
     end
   end)
-  
-  Jokermon:load()
   
 end
 
