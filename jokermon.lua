@@ -41,7 +41,7 @@ if not Jokermon then
         if Keepers then
           Keepers.joker_names[player_unit:network():peer():id()] = joker.name
         end
-        managers.groupai:state():convert_hostage_to_criminal(unit, not is_local_player and player_unit)
+        managers.groupai:state():convert_hostage_to_criminal(unit, (not is_local_player) and player_unit)
         self:set_unit_stats(unit, joker)
         return true
       elseif is_local_player and self.settings.show_messages then
@@ -267,7 +267,10 @@ if not Jokermon then
     local joker = key and Jokermon.jokers[key]
     if joker then
       joker.hp_ratio = unit:character_damage()._health_ratio
-      Jokermon.panels[key]:update_hp(joker.hp, joker.hp_ratio)
+      local panel = Jokermon.panels[key]
+      if panel then
+        panel:update_hp(joker.hp, joker.hp_ratio)
+      end
     end
   end)
 
@@ -280,7 +283,7 @@ if not Jokermon then
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
     if id == "jokermon_request_spawn" then
       Jokermon:spawn(json.decode(data), nil, LuaNetworking:GetPeers()[sender]:unit())
-    elseif id == "jokermon_uname" then
+    elseif id == "jokermon_uname" and #Jokermon._queued_keys == 0 then
       local joker_data = Jokermon._queued_jokers[1]
       if joker_data then
         joker_data.joker.uname = data
