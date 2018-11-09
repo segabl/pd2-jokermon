@@ -1,13 +1,14 @@
 JokerPanel = class()
 
-local hp_color = {
-  normal = Color(0.5, 1, 0.5),
-  low = Color(1, 1, 0.5),
-  critical = Color(1, 0.5, 0.5)
+JokerPanel.COLORS = {
+  exp = Color(0.5, 1, 1),
+  hp_normal = Color(0.5, 1, 0.5),
+  hp_low = Color(1, 1, 0.5),
+  hp_critical = Color(1, 0.5, 0.5)
 }
 
 local function hp_ratio_to_color(hp_ratio)
-  return hp_ratio <= 0.15 and hp_color.critical or hp_ratio <= 0.5 and hp_color.low or hp_color.normal
+  return hp_ratio <= 0.15 and JokerPanel.COLORS.hp_critical or hp_ratio <= 0.5 and JokerPanel.COLORS.hp_low or JokerPanel.COLORS.hp_normal
 end
 
 function JokerPanel:init(panel)
@@ -88,7 +89,7 @@ function JokerPanel:init(panel)
   })
   self._exp_bar = self._panel:rect({
     name = "exp",
-    color = Color(0.5, 1, 1),
+    color = self.COLORS.exp,
     w = exp_bg:w(),
     h = exp_bg:h(),
     x = exp_bg:x(),
