@@ -18,6 +18,7 @@ if not Jokermon then
   Jokermon._num_panels = 0
   Jokermon._queued_keys = {}
   Jokermon._queued_jokers = {}
+  Jokermon._queued_unames = {}
 
   function Jokermon:spawn(joker, index, player_unit)
     if not alive(player_unit) then
@@ -201,7 +202,7 @@ if not Jokermon then
   Jokermon:load()
   
   Hooks:Add("HopLibOnMinionAdded", "HopLibOnMinionAddedJokermon", function(unit, player_unit)
-    if not player_unit == managers.player:local_player() then
+    if player_unit ~= managers.player:local_player() then
       if Network:is_server() then
         LuaNetworking:SendToPeer(player_unit:network():peer():id(), "jokermon_uname", unit:name():key())
       end
@@ -210,13 +211,13 @@ if not Jokermon then
 
     local key = Jokermon._queued_keys[1]
     if key then
-      table.remove(Jokermon._queued_keys, 1)
       -- Use existing Jokermon entry
       local info = HopLib:unit_info_manager():get_info(unit)
       local joker = Jokermon.jokers[key]
       info._nickname = joker.name
       Jokermon:set_unit_stats(unit, joker)
       Jokermon:setup_joker(key, unit, joker)
+      table.remove(Jokermon._queued_keys, 1)
     else
       -- Create new Jokermon entry
       key = #Jokermon.jokers + 1
@@ -231,14 +232,17 @@ if not Jokermon then
       }
       joker.exp = Jokermon:get_needed_exp(joker, joker.level)
 
+      local uname = Jokermon._queued_unames[1]
       if Network:is_server() then
         Jokermon:add_joker(joker)
         Jokermon:setup_joker(key, unit, joker)
+      elseif uname then
+        joker.uname = uname
+        Jokermon:add_joker(joker)
+        Jokermon:setup_joker(key, unit, joker)
+        table.remove(Jokermon._queued_unames, 1)
       else
-        table.insert(Jokermon._queued_jokers, { 
-          key = key,
-          unit = unit,
-          joker = joker })
+        table.insert(Jokermon._queued_jokers, { key = key, unit = unit, joker = joker })
       end
     end
 
@@ -279,10 +283,12 @@ if not Jokermon then
     elseif id == "jokermon_uname" then
       local joker_data = Jokermon._queued_jokers[1]
       if joker_data then
-        table.remove(Jokermon._queued_jokers, 1)
         joker_data.joker.uname = data
         Jokermon:add_joker(joker_data.joker)
         Jokermon:setup_joker(joker_data.key, joker_data.unit, joker_data.joker)
+        table.remove(Jokermon._queued_jokers, 1)
+      else
+        table.insert(Jokermon._queued_unames, data)
       end
     end
   end)
