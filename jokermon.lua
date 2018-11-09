@@ -17,15 +17,11 @@ if not Jokermon then
   Jokermon.units = {}
   Jokermon.queued_keys = {}
   Jokermon._num_panels = 0
-  
-  getmetatable(Idstring()).construct = function(self, id)
-    local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", id))
-    return xml and xml.id
-  end
 
   function Jokermon:spawn(joker, index, player_unit)
     if joker.hp_ratio > 0 then
-      local ids = Idstring:construct(joker.uname)
+      local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
+      local ids = xml and xml.id
       if ids and PackageManager:unit_data(ids) then
         if index then
           table.insert(self.queued_keys, index)
@@ -173,8 +169,10 @@ if not Jokermon then
       file:close()
     end
   end
+
+  Jokermon:load()
   
-  Hooks:Add("HopLibOnEnemyConverted", "HopLibOnEnemyConvertedJokermon", function(unit, player_unit)
+  Hooks:Add("HopLibOnMinionAdded", "HopLibOnMinionAddedJokermon", function(unit, player_unit)
     if player_unit == managers.player:local_player() then
       local joker
 
@@ -220,7 +218,19 @@ if not Jokermon then
 
   end)
 
-  Jokermon:load()
+  Hooks:Add("HopLibOnMinionRemoved", "HopLibOnMinionRemovedJokermon", function(unit)
+    local key = unit:base()._jokermon_key
+    local joker = key and Jokermon.settings.jokers[key]
+    if joker then
+      joker.hp_ratio = unit:character_damage()._health_ratio
+      if joker.hp_ratio <= 0 and Jokermon.settings.show_messages then
+        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " fainted!", tweak_data.system_chat_color)
+      end
+      Jokermon:save(true)
+      Jokermon:remove_panel(key)
+      Jokermon.units[key] = nil
+    end
+  end)
 
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
     local key = unit:base()._jokermon_key
