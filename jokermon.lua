@@ -15,30 +15,33 @@ if not Jokermon then
   Jokermon.jokers = {}
   Jokermon.panels = {}
   Jokermon.units = {}
-  Jokermon.queued_keys = {}
   Jokermon._num_panels = 0
+  Jokermon._queued_keys = {}
 
   function Jokermon:spawn(joker, index, player_unit)
+    if not alive(player_unit) then
+      return
+    end
     if joker.hp_ratio > 0 then
+      local local_player = managers.player:local_player()
       local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
       local ids = xml and xml.id
       if ids and PackageManager:unit_data(ids) then
-        if index then
-          table.insert(self.queued_keys, index)
+        if player_unit == local_player then
+          table.insert(self._queued_keys, index)
         end
         if Network:is_client() then
           LuaNetworking:SendToPeer(1, "request_joker_spawn", json.encode(joker))
           return true
         end
-        player_unit = player_unit or managers.player:local_player()
         local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
         unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
         if Keepers then
           Keepers.joker_names[player_unit:network():peer():id()] = joker.name
         end
-        managers.groupai:state():convert_hostage_to_criminal(unit, player_unit ~= managers.player:local_player() and player_unit)
+        managers.groupai:state():convert_hostage_to_criminal(unit, player_unit ~= local_player and player_unit)
         return true
-      elseif index and self.settings.show_messages then
+      elseif player_unit == local_player and self.settings.show_messages then
         managers.chat:_receive_message(1, "JOKERMON", joker.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
       end
     end
@@ -57,7 +60,7 @@ if not Jokermon then
     if joker.level >= 100 then
       return 1
     end
-    local needed_current, needed_next = Jokermon:get_needed_exp(joker, joker.level), Jokermon:get_needed_exp(joker, joker.level + 1)
+    local needed_current, needed_next = self:get_needed_exp(joker, joker.level), self:get_needed_exp(joker, joker.level + 1)
     return (joker.exp - needed_current) / (needed_next - needed_current)
   end
 
@@ -65,7 +68,7 @@ if not Jokermon then
     local i = 0
     local x, y
     local x_pos, y_pos, spacing = self.settings.panel_x_pos, self.settings.panel_y_pos, self.settings.panel_spacing
-    for _, panel in pairs(Jokermon.panels) do
+    for _, panel in pairs(self.panels) do
       if self.settings.panel_layout == 1 then
         x = (panel._parent_panel:w() - panel._panel:w()) * x_pos
         y = (panel._parent_panel:h() - panel._panel:h() * self._num_panels - spacing * (self._num_panels - 1)) * y_pos + (panel._panel:h() + spacing) * i
@@ -79,7 +82,11 @@ if not Jokermon then
   end
 
   function Jokermon:add_panel(key, joker)
-    local panel = JokerPanel:new(managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2).panel)
+    local hud = managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
+    if not hud then
+      return
+    end
+    local panel = JokerPanel:new(hud.panel)
     panel:update_name(joker.name)
     panel:update_hp(joker.hp, joker.hp_ratio, true)
     panel:update_level(joker.level)
@@ -92,11 +99,11 @@ if not Jokermon then
   end
 
   function Jokermon:remove_panel(key)
-    if Jokermon.panels[key] then
-      Jokermon.panels[key]:remove()
-      Jokermon.panels[key] = nil
+    if self.panels[key] then
+      self.panels[key]:remove()
+      self.panels[key] = nil
       self._num_panels = self._num_panels - 1
-      Jokermon:layout_panels()
+      self:layout_panels()
     end
   end
 
@@ -112,29 +119,29 @@ if not Jokermon then
   end
 
   function Jokermon:give_exp(key, exp)
-    local joker = Jokermon.jokers[key]
+    local joker = self.jokers[key]
     if joker and joker.level < 100 then
-      local panel = Jokermon.panels[key]
-      joker.exp = joker.exp + exp
+      local panel = self.panels[key]
       local old_level = joker.level
+      joker.exp = joker.exp + exp
       while joker.level < 100 and self:get_exp_ratio(joker) >= 1 do
-        joker.level = joker.level + 1
-
         -- update stats
+        joker.level = joker.level + 1
         joker.hp = joker.hp + self:get_base_stats(joker).base_hp * ((joker.level - 1) / 99)
+      end
+      if joker.level ~= old_level then
         self:set_unit_stats(self.units[key], joker)
-        
         if panel then
           panel:update_hp(joker.hp, joker.hp_ratio)
           panel:update_level(joker.level)
           panel:update_exp(0, true)
         end
-      end
-      if joker.level ~= old_level and self.settings.show_messages then
-        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
+        if self.settings.show_messages then
+          managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
+        end
       end
       if panel then
-        panel:update_exp(Jokermon:get_exp_ratio(joker))
+        panel:update_exp(self:get_exp_ratio(joker))
       end
     end
   end
@@ -175,19 +182,16 @@ if not Jokermon then
   Hooks:Add("HopLibOnMinionAdded", "HopLibOnMinionAddedJokermon", function(unit, player_unit)
     if player_unit == managers.player:local_player() then
       local joker
-
-      local key = Jokermon.queued_keys[1]
+      local key = self._queued_keys[1]
       
       if key then
+        table.remove(self._queued_keys, 1)
         -- Use existing Jokermon entry
-        table.remove(Jokermon.queued_keys, 1)
-
         local info = HopLib:unit_info_manager():get_info(unit)
         joker = Jokermon.jokers[key]
         info._nickname = joker.name
-
         Jokermon:set_unit_stats(unit, joker)
-      else
+      elseif Network:is_server() then -- TODO: remove server restriction if possible
         -- Create new Jokermon entry
         key = #Jokermon.jokers + 1
         joker = {
@@ -249,10 +253,9 @@ if not Jokermon then
   
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
     if id == "request_joker_spawn" then
-      local joker = json.decode(data)
       local player_unit = LuaNetworking:GetPeers()[sender]:unit()
-      if alive(unit) then
-        Jokermon:spawn(joker, nil, player_unit)
+      if alive(player_unit) then
+        Jokermon:spawn(json.decode(data), nil, player_unit)
       end
     end
   end)

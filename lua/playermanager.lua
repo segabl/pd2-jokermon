@@ -12,11 +12,14 @@ function PlayerManager:spawned_player(id, unit)
         if max_jokers <= 0 then
           return
         end
-        if Jokermon:spawn(joker, i) then
+        if Jokermon:spawn(joker, i, managers.player:local_player()) then
           max_jokers = max_jokers - 1
         end
       end
-
+      -- Remove queued keys after 2 seconds so future converts don't get mixed up in case the server didn't spawn jokers for some reason
+      DelayedCalls:Add("ClearJokermonQueuedKeys", 2, function ()
+        Jokermon._queued_keys = {}
+      end)
     end)
   end
 end
