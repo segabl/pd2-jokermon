@@ -182,10 +182,10 @@ if not Jokermon then
   Hooks:Add("HopLibOnMinionAdded", "HopLibOnMinionAddedJokermon", function(unit, player_unit)
     if player_unit == managers.player:local_player() then
       local joker
-      local key = self._queued_keys[1]
+      local key = Jokermon._queued_keys[1]
       
       if key then
-        table.remove(self._queued_keys, 1)
+        table.remove(Jokermon._queued_keys, 1)
         -- Use existing Jokermon entry
         local info = HopLib:unit_info_manager():get_info(unit)
         joker = Jokermon.jokers[key]

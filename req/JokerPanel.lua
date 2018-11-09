@@ -57,7 +57,7 @@ function JokerPanel:init(panel)
   })
   self._hp_bar = self._panel:rect({
     name = "hp",
-    color = hp_color.normal,
+    color = self.COLORS.normal,
     w = hp_bg:w(),
     h = hp_bg:h(),
     x = hp_bg:x(),

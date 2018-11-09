@@ -8,7 +8,7 @@ function PlayerManager:spawned_player(id, unit)
         return
       end
       -- Try spawning Jokers
-      for i, joker in ipairs(Jokermon.settings.jokers) do
+      for i, joker in ipairs(Jokermon.jokers) do
         if max_jokers <= 0 then
           return
         end
@@ -16,10 +16,6 @@ function PlayerManager:spawned_player(id, unit)
           max_jokers = max_jokers - 1
         end
       end
-      -- Remove queued keys after 2 seconds so future converts don't get mixed up in case the server didn't spawn jokers for some reason
-      DelayedCalls:Add("ClearJokermonQueuedKeys", 2, function ()
-        Jokermon._queued_keys = {}
-      end)
     end)
   end
 end
