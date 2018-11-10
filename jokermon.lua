@@ -19,6 +19,7 @@ if not Jokermon then
   Jokermon._queued_keys = {}
   Jokermon._queued_jokers = {}
   Jokermon._queued_unames = {}
+  Jokermon._queued_converts = {}
 
   function Jokermon:spawn(joker, index, player_unit)
     if not alive(player_unit) then
@@ -32,22 +33,50 @@ if not Jokermon then
         if is_local_player then
           table.insert(self._queued_keys, index)
         end
+        -- If we are client, request spawn from server
         if Network:is_client() then
           LuaNetworking:SendToPeer(1, "jokermon_request_spawn", json.encode(joker))
           return true
         end
         local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
         unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
-        if Keepers then
-          Keepers.joker_names[player_unit:network():peer():id()] = joker.name
-        end
-        managers.groupai:state():convert_hostage_to_criminal(unit, (not is_local_player) and player_unit)
-        self:set_unit_stats(unit, joker)
+        -- Queue for conversion (to avoid issues when converting instantly after spawn)
+        self:queue_unit_convert(unit, is_local_player, player_unit, joker)
         return true
       elseif is_local_player and self.settings.show_messages then
         managers.chat:_receive_message(1, "JOKERMON", joker.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
       end
     end
+  end
+
+  function Jokermon:_convert_queued_units()
+    for _, data in pairs(self._queued_converts) do
+      if alive(data.unit) then
+        if not alive(data.player_unit) then
+          World:delete_unit(data.unit)
+        else
+          if Keepers then
+            Keepers.joker_names[data.player_unit:network():peer():id()] = data.joker.name
+          end
+          managers.groupai:state():convert_hostage_to_criminal(data.unit, (not data.is_local_player) and data.player_unit)
+          self:set_unit_stats(data.unit, data.joker)
+        end
+      end
+    end
+    self._queued_converts = {}
+  end
+
+  function Jokermon:queue_unit_convert(unit, is_local_player, player_unit, joker)
+    table.insert(self._queued_converts, { 
+      is_local_player = is_local_player,
+      player_unit = player_unit,
+      unit = unit,
+      joker = joker
+    })
+    -- Convert all queued units after a short delay (Resets the delayed call if it already exists)
+    DelayedCalls:Add("ConvertJokermon", 0.25, function ()
+      Jokermon:_convert_queued_units()
+    end)
   end
 
   function Jokermon:add_joker(joker)
@@ -84,6 +113,45 @@ if not Jokermon then
     end
     local needed_current, needed_next = self:get_needed_exp(joker, joker.level), self:get_needed_exp(joker, joker.level + 1)
     return (joker.exp - needed_current) / (needed_next - needed_current)
+  end
+
+  function Jokermon:give_exp(key, exp)
+    local joker = self.jokers[key]
+    if joker and joker.level < 100 then
+      local panel = self.panels[key]
+      local old_level = joker.level
+      joker.exp = joker.exp + exp
+      while joker.level < 100 and self:get_exp_ratio(joker) >= 1 do
+        -- update stats
+        joker.level = joker.level + 1
+        joker.hp = joker.hp + self:get_base_stats(joker).base_hp * ((joker.level - 1) / 99)
+      end
+      if joker.level ~= old_level then
+        self:set_unit_stats(self.units[key], joker)
+        if panel then
+          panel:update_hp(joker.hp, joker.hp_ratio)
+          panel:update_level(joker.level)
+          panel:update_exp(0, true)
+        end
+        if self.settings.show_messages then
+          managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
+        end
+      end
+      if panel then
+        panel:update_exp(self:get_exp_ratio(joker))
+      end
+    end
+  end
+
+  function Jokermon:set_unit_stats(unit, joker)
+    if not alive(unit) then
+      return
+    end
+    local u_damage = unit:character_damage()
+    u_damage._HEALTH_INIT = joker.hp
+    u_damage._health_ratio = joker.hp_ratio
+    u_damage._health = u_damage._health_ratio * u_damage._HEALTH_INIT
+    u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
   end
 
   function Jokermon:layout_panels()
@@ -126,45 +194,6 @@ if not Jokermon then
       self.panels[key] = nil
       self._num_panels = self._num_panels - 1
       self:layout_panels()
-    end
-  end
-
-  function Jokermon:set_unit_stats(unit, joker)
-    if not alive(unit) then
-      return
-    end
-    local u_damage = unit:character_damage()
-    u_damage._HEALTH_INIT = joker.hp
-    u_damage._health_ratio = joker.hp_ratio
-    u_damage._health = u_damage._health_ratio * u_damage._HEALTH_INIT
-    u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
-  end
-
-  function Jokermon:give_exp(key, exp)
-    local joker = self.jokers[key]
-    if joker and joker.level < 100 then
-      local panel = self.panels[key]
-      local old_level = joker.level
-      joker.exp = joker.exp + exp
-      while joker.level < 100 and self:get_exp_ratio(joker) >= 1 do
-        -- update stats
-        joker.level = joker.level + 1
-        joker.hp = joker.hp + self:get_base_stats(joker).base_hp * ((joker.level - 1) / 99)
-      end
-      if joker.level ~= old_level then
-        self:set_unit_stats(self.units[key], joker)
-        if panel then
-          panel:update_hp(joker.hp, joker.hp_ratio)
-          panel:update_level(joker.level)
-          panel:update_exp(0, true)
-        end
-        if self.settings.show_messages then
-          managers.chat:_receive_message(1, "JOKERMON", joker.name .. " reached Lv." .. joker.level .. "!", tweak_data.system_chat_color)
-        end
-      end
-      if panel then
-        panel:update_exp(self:get_exp_ratio(joker))
-      end
     end
   end
 
