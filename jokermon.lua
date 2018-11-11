@@ -74,7 +74,7 @@ if not Jokermon then
       joker = joker
     })
     -- Convert all queued units after a short delay (Resets the delayed call if it already exists)
-    DelayedCalls:Add("ConvertJokermon", 0.25, function ()
+    DelayedCalls:Add("ConvertJokermon", 0.5, function ()
       Jokermon:_convert_queued_units()
     end)
   end
