@@ -307,23 +307,28 @@ if not Jokermon then
   end)
 
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
+    local u_damage = unit:character_damage()
     local key = unit:base()._jokermon_key
     local joker = key and Jokermon.jokers[key]
     if joker then
-      joker.hp_ratio = unit:character_damage()._health_ratio
+      joker.hp_ratio = u_damage._health_ratio
       local panel = Jokermon.panels[key]
       if panel then
         panel:update_hp(joker.hp, joker.hp_ratio)
       end
     end
-  end)
-
-  Hooks:Add("HopLibOnUnitDied", "HopLibOnUnitDiedJokermon", function(unit, damage_info)
-    if alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key then
-      Jokermon:give_exp(damage_info.attacker_unit:base()._jokermon_key, unit:character_damage()._HEALTH_INIT)
+    local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
+    if attacker_key then
+      u_damage._jokermon_assists = u_damage._jokermon_assists or {}
+      u_damage._jokermon_assists[attacker_key] = true
+    end
+    if u_damage:dead() and u_damage._jokermon_assists then
+      for key, _ in pairs(u_damage._jokermon_assists) do
+        Jokermon:give_exp(key, u_damage._HEALTH_INIT * (key == attacker_key and 1 or 0.5))
+      end
     end
   end)
-  
+
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
     if id == "jokermon_request_spawn" then
       Jokermon:spawn(json.decode(data), nil, LuaNetworking:GetPeers()[sender]:unit())

@@ -6,7 +6,7 @@ function CharacterTweakData:init(...)
     if type(v) == "table" and v.HEALTH_INIT and v.weapon then
       v.jokermon_stats = {
         base_hp = v.HEALTH_INIT,
-        exp_rate = 1.5 + v.HEALTH_INIT / 16
+        exp_rate = 1.75 + (v.HEALTH_INIT - 4) / 24
       }
     end
   end
