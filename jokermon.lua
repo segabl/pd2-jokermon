@@ -267,13 +267,14 @@ if not Jokermon then
     else
       -- Create new Jokermon entry
       key = #Jokermon.jokers + 1
+      local mul = (tweak_data:difficulty_to_index(Global.game_settings.difficulty) - 1) / (#tweak_data.difficulties - 1)
       local joker = {
         tweak = unit:base()._tweak_table,
         uname = unit:name():key(),
         name = HopLib:unit_info_manager():get_info(unit):nickname(),
         hp = unit:character_damage()._HEALTH_INIT,
         hp_ratio = 1,
-        level = math.floor(1 + math.random(20, 70) * (tweak_data:difficulty_to_index(Global.game_settings.difficulty) / #tweak_data.difficulties)),
+        level = math.max(1, math.floor(40 * mul + math.random(0, 10 + 10 * mul))),
         exp = 0
       }
       joker.exp = Jokermon:get_needed_exp(joker, joker.level)
