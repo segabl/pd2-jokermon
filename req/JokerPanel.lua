@@ -16,7 +16,7 @@ function JokerPanel:init(panel)
   self._panel = self._parent_panel:panel({
     w = 256,
     h = 48,
-    layer = 100
+    layer = 50
   })
 
   self._panel:rect({
