@@ -10,6 +10,8 @@ if not Jokermon then
     panel_y_pos = 0.2,
     panel_spacing = 8,
     panel_layout = 1,
+    panel_x_align = 1,
+    panel_y_align = 1,
     show_messages = true
   }
   Jokermon.jokers = {}
@@ -122,7 +124,7 @@ if not Jokermon then
       while joker.level < 100 and self:get_exp_ratio(joker) >= 1 do
         -- update stats
         joker.level = joker.level + 1
-        joker.hp = joker.hp + self:get_base_stats(joker).base_hp * ((joker.level - 1) / 99)
+        joker.hp = joker.hp + self:get_base_stats(joker).base_hp * ((joker.level - 1) / 99) * 0.25
       end
       if joker.level ~= old_level then
         self:set_unit_stats(self.units[key], joker, true)
@@ -163,13 +165,19 @@ if not Jokermon then
     local i = 0
     local x, y
     local x_pos, y_pos, spacing = self.settings.panel_x_pos, self.settings.panel_y_pos, self.settings.panel_spacing
+    local x_align, y_align = self.settings.panel_x_align, self.settings.panel_y_align
+    local horizontal_layout = self.settings.panel_layout ~= 1 and 1 or 0
+    local vertical_layout = self.settings.panel_layout == 1 and 1 or 0
     for _, panel in pairs(self.panels) do
-      if self.settings.panel_layout == 1 then
-        x = (panel._parent_panel:w() - panel._panel:w()) * x_pos
+      if x_align == 2 and horizontal_layout == 1 then
+        x = (panel._parent_panel:w() - panel._panel:w() * self._num_panels - spacing * (self._num_panels - 1)) * x_pos + (panel._panel:w() + spacing) * i
+      else
+        x = (panel._parent_panel:w() - panel._panel:w()) * x_pos + (panel._panel:w() + spacing) * i * horizontal_layout * (x_align == 3 and -1 or 1)
+      end
+      if y_align == 2 and vertical_layout == 1 then
         y = (panel._parent_panel:h() - panel._panel:h() * self._num_panels - spacing * (self._num_panels - 1)) * y_pos + (panel._panel:h() + spacing) * i
       else
-        x = (panel._parent_panel:w() - panel._panel:w() * self._num_panels - spacing * (self._num_panels - 1)) * x_pos + (panel._panel:w() + spacing) * i
-        y = (panel._parent_panel:h() - panel._panel:h()) * y_pos
+        y = (panel._parent_panel:h() - panel._panel:h()) * y_pos + (panel._panel:h() + spacing) * i * vertical_layout * (y_align == 3 and -1 or 1)
       end
       panel:set_position(x, y)
       i = i + 1
@@ -339,6 +347,126 @@ if not Jokermon then
       data = json.decode(data)
       Jokermon:set_unit_stats(Jokermon._unit_id_mappings[data.uid], data)
     end
+  end)
+
+  Hooks:Add("LocalizationManagerPostInit", "LocalizationManagerPostInitJokermon", function(loc)
+    local language = "english"
+    local system_language = HopLib:get_game_language()
+    local blt_language = BLT.Localization:get_language().language
+
+    local loc_path = Jokermon.mod_path .. "loc/"
+    if io.file_is_readable(loc_path .. system_language .. ".txt") then
+      language = system_language
+    end
+    if io.file_is_readable(loc_path .. blt_language .. ".txt") then
+      language = blt_language
+    end
+
+    loc:load_localization_file(loc_path .. language .. ".txt")
+    loc:load_localization_file(loc_path .. "english.txt", false)
+  end)
+
+  Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenusPlayerJokermon", function(menu_manager, nodes)
+
+    local menu_id_main = "JokermonMenu"
+    MenuHelper:NewMenu(menu_id_main)
+
+    MenuCallbackHandler.Jokermon_toggle = function(self, item)
+      Jokermon.settings[item:name()] = (item:value() == "on")
+      Jokermon:layout_panels()
+      Jokermon:save()
+    end
+
+    MenuCallbackHandler.Jokermon_value = function(self, item)
+      Jokermon.settings[item:name()] = item:value()
+      Jokermon:layout_panels()
+      Jokermon:save()
+    end
+
+    MenuHelper:AddMultipleChoice({
+      id = "panel_layout",
+      title = "Jokermon_menu_panel_layout",
+      callback = "Jokermon_value",
+      value = Jokermon.settings.panel_layout,
+      items = { "Jokermon_menu_panel_layout_vertical", "Jokermon_menu_panel_layout_horizontal" },
+      menu_id = menu_id_main,
+      priority = 99
+    })
+
+    MenuHelper:AddMultipleChoice({
+      id = "panel_x_align",
+      title = "Jokermon_menu_panel_x_align",
+      callback = "Jokermon_value",
+      value = Jokermon.settings.panel_x_align,
+      items = { "Jokermon_menu_panel_align_left", "Jokermon_menu_panel_align_center", "Jokermon_menu_panel_align_right" },
+      menu_id = menu_id_main,
+      priority = 98
+    })
+    MenuHelper:AddMultipleChoice({
+      id = "panel_y_align",
+      title = "Jokermon_menu_panel_y_align",
+      callback = "Jokermon_value",
+      value = Jokermon.settings.panel_y_align,
+      items = { "Jokermon_menu_panel_align_top", "Jokermon_menu_panel_align_center", "Jokermon_menu_panel_align_bottom" },
+      menu_id = menu_id_main,
+      priority = 97
+    })
+
+    MenuHelper:AddSlider({
+      id = "panel_x_pos",
+      title = "Jokermon_menu_panel_x_pos",
+      callback = "Jokermon_value",
+      value = Jokermon.settings.panel_x_pos,
+      min = 0,
+      max = 1,
+      step = 0.01,
+      show_value = true,
+      menu_id = menu_id_main,
+      priority = 96
+    })
+    MenuHelper:AddSlider({
+      id = "panel_y_pos",
+      title = "Jokermon_menu_panel_y_pos",
+      callback = "Jokermon_value",
+      value = Jokermon.settings.panel_y_pos,
+      min = 0,
+      max = 1,
+      step = 0.01,
+      show_value = true,
+      menu_id = menu_id_main,
+      priority = 95
+    })
+    MenuHelper:AddSlider({
+      id = "panel_spacing",
+      title = "Jokermon_menu_panel_spacing",
+      callback = "Jokermon_value",
+      value = Jokermon.settings.panel_spacing,
+      min = 0,
+      max = 256,
+      step = 1,
+      show_value = true,
+      menu_id = menu_id_main,
+      priority = 94
+    })
+    
+    MenuHelper:AddDivider({
+      id = "divider",
+      size = 24,
+      menu_id = menu_id_main,
+      priority = 90
+    })
+    
+    MenuHelper:AddToggle({
+      id = "show_messages",
+      title = "Jokermon_menu_show_messages",
+      callback = "Jokermon_toggle",
+      value = Jokermon.settings.show_messages,
+      menu_id = menu_id_main,
+      priority = 89
+    })
+
+    nodes[menu_id_main] = MenuHelper:BuildMenu(menu_id_main, { area_bg = "half" })
+    MenuHelper:AddMenuItem(nodes["blt_options"], menu_id_main, "Jokermon_menu_main_name", "Jokermon_menu_main_desc")
   end)
   
 end

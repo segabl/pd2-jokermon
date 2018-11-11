@@ -1,0 +1,18 @@
+{
+  "Jokermon_menu_main_name" : "Jokermon",
+  "Jokermon_menu_main_desc" : "Customize Jokermon settings",
+  "Jokermon_menu_panel_layout" : "Panel layout",
+  "Jokermon_menu_panel_layout_vertical" : "Vertical",
+  "Jokermon_menu_panel_layout_horizontal" : "Horizontal",
+  "Jokermon_menu_panel_x_align" : "Horizontal alignment",
+  "Jokermon_menu_panel_y_align" : "Vertical alignment",
+  "Jokermon_menu_panel_align_left" : "Left",
+  "Jokermon_menu_panel_align_center" : "Center",
+  "Jokermon_menu_panel_align_right" : "Right",
+  "Jokermon_menu_panel_align_top" : "Top",
+  "Jokermon_menu_panel_align_bottom" : "Bottom",
+  "Jokermon_menu_panel_x_pos" : "Horizontal position",
+  "Jokermon_menu_panel_y_pos" : "Vertical position",
+  "Jokermon_menu_panel_spacing" : "Panel spacing",
+  "Jokermon_menu_show_messages" : "Show messages"
+}
