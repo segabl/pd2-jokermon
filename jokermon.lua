@@ -133,6 +133,7 @@ if not Jokermon then
   end
 
   function Jokermon:give_exp(key, exp)
+    exp = math.ceil(exp)
     local joker = self.jokers[key]
     if joker and joker.level < 100 then
       local panel = self.panels[key]
@@ -328,11 +329,13 @@ if not Jokermon then
     local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
     if attacker_key then
       u_damage._jokermon_assists = u_damage._jokermon_assists or {}
-      u_damage._jokermon_assists[attacker_key] = true
+      local dmg = u_damage._jokermon_assists[attacker_key]
+      u_damage._jokermon_assists[attacker_key] = dmg and dmg + damage_info.damage or damage_info.damage
     end
     if u_damage:dead() and u_damage._jokermon_assists then
-      for key, _ in pairs(u_damage._jokermon_assists) do
-        Jokermon:give_exp(key, u_damage._HEALTH_INIT * (key == attacker_key and 1 or 0.5))
+      for key, dmg in pairs(u_damage._jokermon_assists) do
+        -- Assists get exp based on the damage they did, kills get exp based on enemy hp
+        Jokermon:give_exp(key, key == attacker_key and u_damage._HEALTH_INIT or dmg)
       end
     end
   end)
