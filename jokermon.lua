@@ -153,6 +153,7 @@ if not Jokermon then
 
   function Jokermon:set_unit_stats(unit, data, sync)
     if not alive(unit) then
+      log("[Jokermon] ERROR: Trying to set stats for non existing unit!")
       return
     end
     local u_damage = unit:character_damage()
@@ -162,7 +163,7 @@ if not Jokermon then
     u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
     if sync then
       LuaNetworking:SendToPeers("jokermon_stats", json.encode({
-        id = unit:id(),
+        uid = unit:id(),
         hp = data.hp,
         hp_ratio = data.hp_ratio
       }))
