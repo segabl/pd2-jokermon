@@ -26,27 +26,25 @@ if not Jokermon then
     if not alive(player_unit) then
       return
     end
-    if joker.hp_ratio > 0 then
-      local is_local_player = player_unit == managers.player:local_player()
-      local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
-      local ids = xml and xml.id
-      if ids and PackageManager:unit_data(ids) then
-        if is_local_player then
-          table.insert(self._queued_keys, index)
-        end
-        -- If we are client, request spawn from server
-        if Network:is_client() then
-          LuaNetworking:SendToPeer(1, "jokermon_request_spawn", json.encode({ uname = joker.uname, name = joker.name }))
-          return true
-        end
-        local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
-        unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
-        -- Queue for conversion (to avoid issues when converting instantly after spawn)
-        self:queue_unit_convert(unit, is_local_player, player_unit, joker)
-        return true
-      elseif is_local_player and self.settings.show_messages then
-        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
+    local is_local_player = player_unit == managers.player:local_player()
+    local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
+    local ids = xml and xml.id
+    if ids and PackageManager:unit_data(ids) then
+      if is_local_player then
+        table.insert(self._queued_keys, index)
       end
+      -- If we are client, request spawn from server
+      if Network:is_client() then
+        LuaNetworking:SendToPeer(1, "jokermon_request_spawn", json.encode({ uname = joker.uname, name = joker.name }))
+        return true
+      end
+      local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
+      unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
+      -- Queue for conversion (to avoid issues when converting instantly after spawn)
+      self:queue_unit_convert(unit, is_local_player, player_unit, joker)
+      return true
+    elseif is_local_player and self.settings.show_messages then
+      managers.chat:_receive_message(1, "JOKERMON", joker.name .. " can't accompany you on this heist!", tweak_data.system_chat_color)
     end
   end
 
@@ -90,6 +88,16 @@ if not Jokermon then
   function Jokermon:setup_joker(key, unit, joker)
     if not alive(unit) then
       return
+    end
+    -- correct nickname
+    local info = HopLib:unit_info_manager():get_info(unit)
+    info._nickname = joker.name
+    local peer_id = unit:base().kpr_minion_owner_peer_id
+    if Keepers and peer_id then
+      Keepers:DestroyLabel(unit)
+      unit:base().kpr_minion_owner_peer_id = peer_id
+      Keepers.joker_names[peer_id] = joker.name
+      Keepers:SetJokerLabel(unit)
     end
     -- Save to units
     self.units[key] = unit
@@ -248,19 +256,13 @@ if not Jokermon then
     Jokermon._unit_id_mappings[uid] = unit
     
     if player_unit ~= managers.player:local_player() then
-      if Network:is_server() then
-        -- Send uname to client that converted the unit so they can correctly save the joker
-        LuaNetworking:SendToPeer(player_unit:network():peer():id(), "jokermon_uname", unit:name():key())
-      end
       return
     end
 
     local key = Jokermon._queued_keys[1]
     if key then
       -- Use existing Jokermon entry
-      local info = HopLib:unit_info_manager():get_info(unit)
       local joker = Jokermon.jokers[key]
-      info._nickname = joker.name
       Jokermon:set_unit_stats(unit, joker, true)
       Jokermon:setup_joker(key, unit, joker)
       table.remove(Jokermon._queued_keys, 1)
