@@ -90,20 +90,29 @@ if not Jokermon then
       return
     end
     -- correct nickname
-    local info = HopLib:unit_info_manager():get_info(unit)
-    info._nickname = joker.name
-    local peer_id = unit:base().kpr_minion_owner_peer_id
-    if Keepers and peer_id then
-      Keepers:DestroyLabel(unit)
-      unit:base().kpr_minion_owner_peer_id = peer_id
-      Keepers.joker_names[peer_id] = joker.name
-      Keepers:SetJokerLabel(unit)
-    end
+    self:set_joker_name(unit, joker.name, true)
     -- Save to units
     self.units[key] = unit
     unit:base()._jokermon_key = key
     -- Create panel
     self:add_panel(key, joker)
+  end
+
+  function Jokermon:set_joker_name(unit, name, sync)
+    if not alive(unit) then
+      return
+    end
+    HopLib:unit_info_manager():get_info(unit)._nickname = name
+    local peer_id = unit:base().kpr_minion_owner_peer_id
+    if Keepers and peer_id then
+      Keepers:DestroyLabel(unit)
+      unit:base().kpr_minion_owner_peer_id = peer_id
+      Keepers.joker_names[peer_id] = name
+      Keepers:SetJokerLabel(unit)
+    end
+    if sync then
+      LuaNetworking:SendToPeers("jokermon_name", json.encode({ uid = unit:id(), name = name }))
+    end
   end
 
   function Jokermon:get_base_stats(joker)
@@ -153,7 +162,6 @@ if not Jokermon then
 
   function Jokermon:set_unit_stats(unit, data, sync)
     if not alive(unit) then
-      log("[Jokermon] ERROR: Trying to set stats for non existing unit!")
       return
     end
     local u_damage = unit:character_damage()
@@ -162,11 +170,7 @@ if not Jokermon then
     u_damage._health = u_damage._health_ratio * u_damage._HEALTH_INIT
     u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
     if sync then
-      LuaNetworking:SendToPeers("jokermon_stats", json.encode({
-        uid = unit:id(),
-        hp = data.hp,
-        hp_ratio = data.hp_ratio
-      }))
+      LuaNetworking:SendToPeers("jokermon_stats", json.encode({ uid = unit:id(), hp = data.hp, hp_ratio = data.hp_ratio }))
     end
   end
 
@@ -355,6 +359,9 @@ if not Jokermon then
     elseif id == "jokermon_stats" then
       data = json.decode(data)
       Jokermon:set_unit_stats(Jokermon._unit_id_mappings[data.uid], data)
+    elseif id == "jokermon_name" then
+      data = json.decode(data)
+      Jokermon:set_joker_name(Jokermon._unit_id_mappings[data.uid], data.name)
     end
   end)
 
