@@ -1,6 +1,8 @@
 {
   "Jokermon_menu_main_name" : "Jokermon",
   "Jokermon_menu_main_desc" : "Customize Jokermon settings",
+  "Jokermon_menu_nuzlocke" : "Nuzlocke mode",
+  "Jokermon_menu_nuzlocke_desc" : "Can only capture jokers once per heist and joker deaths are final",
   "Jokermon_menu_panel_layout" : "Panel layout",
   "Jokermon_menu_panel_layout_vertical" : "Vertical",
   "Jokermon_menu_panel_layout_horizontal" : "Horizontal",
@@ -14,5 +16,6 @@
   "Jokermon_menu_panel_x_pos" : "Horizontal position",
   "Jokermon_menu_panel_y_pos" : "Vertical position",
   "Jokermon_menu_panel_spacing" : "Panel spacing",
-  "Jokermon_menu_show_messages" : "Show messages"
+  "Jokermon_menu_show_messages" : "Show messages",
+  "Jokermon_menu_show_messages_desc" : "Show messages for certain events related to Jokermon in chat"
 }

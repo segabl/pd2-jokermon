@@ -12,7 +12,7 @@ function PlayerManager:spawned_player(id, unit)
         if max_jokers <= 0 then
           return
         end
-        if joker.hp_ratio > 0 and Jokermon:spawn(joker, i, managers.player:local_player()) then
+        if joker.hp_ratio > 0 and Jokermon:spawn(joker, i, self:local_player()) then
           max_jokers = max_jokers - 1
         end
       end

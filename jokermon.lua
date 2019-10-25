@@ -6,6 +6,7 @@ if not Jokermon then
   Jokermon.mod_path = ModPath
   Jokermon.save_path = SavePath
   Jokermon.settings = {
+    nuzlocke = false,
     panel_x_pos = 0.03,
     panel_y_pos = 0.2,
     panel_spacing = 8,
@@ -21,6 +22,7 @@ if not Jokermon then
   Jokermon._queued_keys = {}
   Jokermon._queued_converts = {}
   Jokermon._unit_id_mappings = {}
+  Jokermon._jokers_added = 0
 
   function Jokermon:spawn(joker, index, player_unit)
     if not alive(player_unit) then
@@ -233,7 +235,13 @@ if not Jokermon then
     if full_save then
       file = io.open(self.save_path .. "jokermon.txt", "w+")
       if file then
-        file:write(json.encode(self.jokers))
+        local jokers = self.jokers
+        if self.settings.nuzlocke then
+          jokers = table.filter_list(self.jokers, function (j)
+            return j.hp_ratio > 0
+          end)
+        end
+        file:write(json.encode(jokers))
         file:close()
       end
     end
@@ -296,6 +304,8 @@ if not Jokermon then
         u_base._jokermon_queued_joker = joker
         LuaNetworking:SendToPeer(1, "jokermon_request_uname", json.encode(uid))
       end
+
+      Jokermon._jokers_added = Jokermon._jokers_added + 1
     end
 
   end)
@@ -306,7 +316,7 @@ if not Jokermon then
     if joker then
       joker.hp_ratio = unit:character_damage()._health_ratio
       if joker.hp_ratio <= 0 and Jokermon.settings.show_messages then
-        managers.chat:_receive_message(1, "JOKERMON", joker.name .. " fainted!", tweak_data.system_chat_color)
+        managers.chat:_receive_message(1, "JOKERMON", joker.name .. (Jokermon.settings.nuzlocke and " died!" or " fainted!"), tweak_data.system_chat_color)
       end
       Jokermon:save(true)
       Jokermon:remove_panel(key)
@@ -335,7 +345,7 @@ if not Jokermon then
     if u_damage:dead() and u_damage._jokermon_assists then
       for key, dmg in pairs(u_damage._jokermon_assists) do
         -- Assists get exp based on the damage they did, kills get exp based on enemy hp
-        Jokermon:give_exp(key, key == attacker_key and u_damage._HEALTH_INIT or dmg)
+        Jokermon:give_exp(key, key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg)
       end
     end
   end)
@@ -401,6 +411,23 @@ if not Jokermon then
       Jokermon:layout_panels()
       Jokermon:save()
     end
+
+    MenuHelper:AddToggle({
+      id = "nuzlocke",
+      title = "Jokermon_menu_nuzlocke",
+      desc = "Jokermon_menu_nuzlocke_desc",
+      callback = "Jokermon_toggle",
+      value = Jokermon.settings.nuzlocke,
+      menu_id = menu_id_main,
+      priority = 101
+    })
+
+    MenuHelper:AddDivider({
+      id = "div1",
+      size = 24,
+      menu_id = menu_id_main,
+      priority = 100
+    })
 
     MenuHelper:AddMultipleChoice({
       id = "panel_layout",
@@ -469,7 +496,7 @@ if not Jokermon then
     })
     
     MenuHelper:AddDivider({
-      id = "divider",
+      id = "div2",
       size = 24,
       menu_id = menu_id_main,
       priority = 90
@@ -478,6 +505,7 @@ if not Jokermon then
     MenuHelper:AddToggle({
       id = "show_messages",
       title = "Jokermon_menu_show_messages",
+      desc = "Jokermon_menu_show_messages_desc",
       callback = "Jokermon_toggle",
       value = Jokermon.settings.show_messages,
       menu_id = menu_id_main,
