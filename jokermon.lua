@@ -35,16 +35,17 @@ if not Jokermon then
     end
   end
 
-  function Jokermon:send_out_joker()
+  function Jokermon:send_out_joker(num)
     if not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached() then
       return
     end
     for i, joker in ipairs(self.jokers) do
-      if not self.units[i] and joker.hp_ratio > 0 and self:spawn(joker, i, managers.player:local_player()) then
+      if not self.units[i] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, i) and self:spawn(joker, i, managers.player:local_player()) then
         self:display_message(managers.localization:text("Jokermon_message_go", { NAME = joker.name }))
-        return
+        break
       end
     end
+    return num and num > 1 and self:send_out_joker(num - 1)
   end
 
   function Jokermon:spawn(joker, index, player_unit)
@@ -389,7 +390,12 @@ if not Jokermon then
       items = { "Jokermon_menu_spawn_mode_manual", "Jokermon_menu_spawn_mode_automatic" },
       value = self.settings.spawn_mode,
       free_typing = false,
-      on_callback = function (item) self:change_menu_setting(item) end
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        if self.settings.spawn_mode > 1 and Utils:IsInHeist() then
+          Jokermon:send_out_joker(managers.player:upgrade_value("player", "convert_enemies_max_minions", 0))
+        end
+      end
     })
     base_settings:Toggle({
       name = "show_messages",
@@ -894,7 +900,7 @@ if not Jokermon then
     loc:load_localization_file(loc_path .. "english.txt", false)
   end)
 
-  Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenusJokermon", function(menu_manager, nodes)
+  Hooks:Add("MenuManagerPostInitialize", "MenuManagerPostInitializeJokermon", function(menu_manager, nodes)
   
     Jokermon:load()
 
