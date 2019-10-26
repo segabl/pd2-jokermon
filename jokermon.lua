@@ -773,7 +773,6 @@ if not Jokermon then
       table.remove(Jokermon._queued_keys, 1)
     else
       -- Create new Jokermon entry
-      -- TODO: capture location, level, etc
       key = #Jokermon.jokers + 1
       local mul = (tweak_data:difficulty_to_index(Global.game_settings.difficulty) - 1) / (#tweak_data.difficulties - 1)
       local joker = {
@@ -869,7 +868,6 @@ if not Jokermon then
         Jokermon:add_joker(u_base._jokermon_queued_joker)
         Jokermon:setup_joker(u_base._jokermon_queued_key, unit, u_base._jokermon_queued_joker)
       end
-      Jokermon._queued_joker_data[data.uid] = nil
     elseif id == "jokermon_stats" then
       data = json.decode(data)
       Jokermon:set_unit_stats(Jokermon._unit_id_mappings[data.uid], data)
