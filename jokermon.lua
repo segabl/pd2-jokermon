@@ -16,7 +16,9 @@ if not Jokermon then
     show_messages = true,
     spawn_mode = 1,
     sorting = 1,
-    sorting_order = 1
+    sorting_order = 1,
+    key_menu = "m",
+    key_spawn_joker = "j"
   }
   Jokermon.jokers = {}
   Jokermon.panels = {}
