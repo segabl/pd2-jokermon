@@ -13,7 +13,10 @@ if not Jokermon then
     panel_layout = 1,
     panel_x_align = 1,
     panel_y_align = 1,
-    show_messages = true
+    show_messages = true,
+    spawn_mode = 1,
+    sorting = 1,
+    sorting_order = 1
   }
   Jokermon.jokers = {}
   Jokermon.panels = {}
@@ -23,6 +26,20 @@ if not Jokermon then
   Jokermon._queued_converts = {}
   Jokermon._unit_id_mappings = {}
   Jokermon._jokers_added = 0
+
+  function Jokermon:send_out_joker()
+    if not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached() then
+      return
+    end
+    for i, joker in ipairs(self.jokers) do
+      if not self.units[i] and joker.hp_ratio > 0 and self:spawn(joker, i, managers.player:local_player()) then
+        if Jokermon.settings.show_messages then
+          managers.chat:_receive_message(1, "JOKERMON", "Go, " .. joker.name .. "!", tweak_data.system_chat_color)
+        end
+        return
+      end
+    end
+  end
 
   function Jokermon:spawn(joker, index, player_unit)
     if not alive(player_unit) then
@@ -40,7 +57,7 @@ if not Jokermon then
         LuaNetworking:SendToPeer(1, "jokermon_request_spawn", json.encode({ uname = joker.uname, name = joker.name }))
         return true
       end
-      local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-300, 300), math.random(-300, 300), 0), player_unit:rotation())
+      local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-50, 50), math.random(-50, 50), 0), player_unit:rotation())
       unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
       -- Queue for conversion (to avoid issues when converting instantly after spawn)
       self:queue_unit_convert(unit, is_local_player, player_unit, joker)
@@ -134,6 +151,11 @@ if not Jokermon then
     return (joker.exp - needed_current) / (needed_next - needed_current)
   end
 
+  function Jokermon:get_heal_price(joker)
+    local base_price = 10000
+    return math.ceil((joker.hp_ratio <= 0 and base_price * 2 or (1 - joker.hp_ratio) * base_price) * joker.level / 10)
+  end
+
   function Jokermon:give_exp(key, exp)
     exp = math.ceil(exp)
     local joker = self.jokers[key]
@@ -177,6 +199,25 @@ if not Jokermon then
     end
   end
 
+  local _sort_comp = {
+    default = function (a, b) return a < b end,
+    [2] = function (a, b) return a > b end
+  }
+  local _sort_val = {
+    default = function (v) return v.order end,
+    [1] = function (v) return v.stats.catch_date end,
+    [2] = function (v) return v.level end,
+    [3] = function (v) return v.hp end,
+    [4] = function (v) return v.hp * v.hp_ratio end,
+    [5] = function (v) return v.hp_ratio end
+  }
+  function Jokermon:sort_jokers()
+    local c = _sort_comp[self.settings.sorting_order] or _sort_comp.default
+    local v = _sort_val[self.settings.sorting] or _sort_val.default
+    table.sort(self.jokers, function (a, b) return c(v(a), v(b)) end)
+    self:save(true)
+  end
+
   function Jokermon:layout_panels()
     local i = 0
     local x, y
@@ -210,10 +251,8 @@ if not Jokermon then
     panel:update_hp(joker.hp, joker.hp_ratio, true)
     panel:update_level(joker.level)
     panel:update_exp(self:get_exp_ratio(joker), true)
-    if not self.panels[key] then
-      self._num_panels = self._num_panels + 1
-    end
     self.panels[key] = panel
+    self._num_panels = self._num_panels + 1
     self:layout_panels()
   end
 
@@ -261,6 +300,385 @@ if not Jokermon then
       self.jokers = json.decode(file:read("*all"))
       file:close()
     end
+    self:sort_jokers()
+  end
+
+  function Jokermon:check_create_menu()
+
+    if self.menu then
+      return
+    end
+  
+    self.menu_title_size = 22
+    self.menu_items_size = 18
+    self.menu_padding = 16
+    self.menu_background_color = Color.black:with_alpha(0.75)
+    self.menu_accent_color = Color("0bce99"):with_alpha(0.75)
+    self.menu_highlight_color = self.menu_accent_color:with_alpha(0.075)
+    self.menu_grid_item_color = Color.black:with_alpha(0.5)
+  
+    self.menu = MenuUI:new({
+      name = "JokermonMenu",
+      layer = 1000,
+      background_blur = true,
+      animate_toggle = true,
+      text_offset = self.menu_padding / 4,
+      show_help_time = 0.5,
+      border_size = 1,
+      accent_color = self.menu_accent_color,
+      highlight_color = self.menu_highlight_color,
+      localized = true,
+      use_default_close_key = true,
+      disable_player_controls = true
+    })
+    
+    local menu_w = self.menu._panel:w()
+    local menu_h = self.menu._panel:h()
+  
+    self._menu_w_left = menu_w / 3 - self.menu_padding
+    self._menu_w_right = menu_w - self._menu_w_left - self.menu_padding * 2
+  
+    local menu = self.menu:Menu({
+      name = "JokermonMainMenu",
+      background_color = self.menu_background_color
+    })
+  
+    local title = menu:DivGroup({
+      name = "JokermonTitle",
+      text = "Jokermon_menu_main_name",
+      size = 26,
+      background_color = Color.transparent,
+      position = { self.menu_padding, self.menu_padding }
+    })
+  
+    local base_settings = menu:DivGroup({
+      name = "JokermonBaseSettings",
+      text = "Jokermon_menu_base_settings",
+      size = self.menu_title_size,
+      inherit_values = {
+        size = self.menu_items_size
+      },
+      border_bottom = true,
+      border_position_below_title = true,
+      w = self._menu_w_left,
+      position = { self.menu_padding, title:Bottom() + self.menu_padding }
+    })
+    base_settings:ComboBox({
+      name = "spawn_mode",
+      text = "Jokermon_menu_spawn_mode",
+      help = "Jokermon_menu_spawn_mode_desc",
+      items = { "Jokermon_menu_spawn_mode_manual", "Jokermon_menu_spawn_mode_automatic" },
+      value = self.settings.spawn_mode,
+      free_typing = false,
+      on_callback = function (item) self:change_menu_setting(item) end
+    })
+    base_settings:Toggle({
+      name = "show_messages",
+      text = "Jokermon_menu_show_messages",
+      help = "Jokermon_menu_show_messages_desc",
+      on_callback = function (item) self:change_menu_setting(item) end,
+      value = self.settings.show_messages
+    })
+    self.menu_nuzlocke = base_settings:Toggle({
+      name = "nuzlocke",
+      text = "Jokermon_menu_nuzlocke",
+      help = "Jokermon_menu_nuzlocke_desc",
+      on_callback = function (item) self:change_menu_setting(item) end,
+      value = self.settings.nuzlocke
+    })
+    base_settings:Divider({
+      h = self.menu_padding * 2
+    })
+  
+    local panel_settings = menu:DivGroup({
+      name = "JokermonPanelSettings",
+      text = "Jokermon_menu_panel_settings",
+      size = self.menu_title_size,
+      inherit_values = {
+        size = self.menu_items_size,
+        wheel_control = true
+      },
+      border_bottom = true,
+      border_position_below_title = true,
+      w = self._menu_w_left,
+      position = { self.menu_padding, base_settings:Bottom() }
+    })
+    panel_settings:ComboBox({
+      name = "panel_layout",
+      text = "Jokermon_menu_panel_layout",
+      items = { "Jokermon_menu_panel_layout_vertical", "Jokermon_menu_panel_layout_horizontal" },
+      value = self.settings.panel_layout,
+      free_typing = false,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels()
+      end
+    })
+    panel_settings:ComboBox({
+      name = "panel_x_align",
+      text = "Jokermon_menu_panel_x_align",
+      items = { "Jokermon_menu_panel_align_left", "Jokermon_menu_panel_align_center", "Jokermon_menu_panel_align_right" },
+      value = self.settings.panel_x_align,
+      free_typing = false,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels()
+      end
+    })
+    panel_settings:ComboBox({
+      name = "panel_y_align",
+      text = "Jokermon_menu_panel_y_align",
+      items = { "Jokermon_menu_panel_align_top", "Jokermon_menu_panel_align_center", "Jokermon_menu_panel_align_bottom" },
+      value = self.settings.panel_y_align,
+      free_typing = false,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels()
+      end
+    })
+    panel_settings:Slider({
+      name = "panel_x_pos",
+      text = "Jokermon_menu_panel_x_pos",
+      value = self.settings.panel_x_pos,
+      min = 0,
+      max = 1,
+      step = 0.01,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels()
+      end
+    })
+    panel_settings:Slider({
+      name = "panel_y_pos",
+      text = "Jokermon_menu_panel_y_pos",
+      value = self.settings.panel_y_pos,
+      min = 0,
+      max = 1,
+      step = 0.01,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels()
+      end
+    })
+    panel_settings:Slider({
+      name = "panel_spacing",
+      text = "Jokermon_menu_panel_spacing",
+      value = self.settings.panel_spacing,
+      min = 0,
+      max = 256,
+      step = 1,
+      floats = 1,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels()
+      end
+    })
+    panel_settings:Divider({
+      h = self.menu_padding * 2
+    })
+
+    local keybinds = menu:DivGroup({
+      name = "JokermonKeybinds",
+      text = "Jokermon_menu_keybinds",
+      size = self.menu_title_size,
+      inherit_values = {
+        size = self.menu_items_size
+      },
+      border_bottom = true,
+      border_position_below_title = true,
+      w = self._menu_w_left,
+      position = { self.menu_padding, panel_settings:Bottom() }
+    })
+    keybinds:KeyBind({
+      name = "key_menu",
+      text = "Jokermon_menu_key_menu",
+      help = "Jokermon_menu_key_menu_desc",
+      value = self.settings.key_menu,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        BLT.Keybinds:get_keybind("jokermon_key_menu"):SetKey(self.settings.key_menu)
+      end
+    })
+    keybinds:KeyBind({
+      name = "key_spawn_joker",
+      text = "Jokermon_menu_key_spawn_joker",
+      help = "Jokermon_menu_key_spawn_joker_desc",
+      value = self.settings.key_spawn_joker,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        BLT.Keybinds:get_keybind("jokermon_key_spawn_joker"):SetKey(self.settings.key_spawn_joker)
+      end
+    })
+  
+    menu:Button({
+      name = "exit",
+      text = "menu_back",
+      size = 24,
+      size_by_text = true,
+      on_callback = function (item) self:set_menu_state(false) end,
+      position = function (item) item:SetPosition(title:Right() - item:W() - self.menu_padding, title:Y()) end
+    })
+  
+    self.menu_management = menu:DivGroup({
+      name = "JokermonManagement",
+      text = "Jokermon_menu_management",
+      size = self.menu_title_size,
+      inherit_values = {
+        size = self.menu_items_size
+      },
+      enabled = not Utils:IsInHeist(),
+      border_bottom = true,
+      border_position_below_title = true,
+      w = self._menu_w_right,
+      position = { base_settings:Right() + self.menu_padding, title:Bottom() + self.menu_padding }
+    })
+    local sorting = self.menu_management:ComboBox({
+      name = "sorting",
+      text = "Jokermon_menu_sorting",
+      help = "Jokermon_menu_sorting_desc",
+      items = { "Jokermon_menu_sorting_date", "Jokermon_menu_sorting_level", "Jokermon_menu_sorting_max_hp", "Jokermon_menu_sorting_hp", "Jokermon_menu_sorting_rel_hp", "Jokermon_menu_sorting_custom" },
+      value = self.settings.sorting,
+      free_typing = false
+    })
+    local order = self.menu_management:ComboBox({
+      name = "sorting_order",
+      text = "Jokermon_menu_sorting_order",
+      items = { "Jokermon_menu_sorting_order_asc", "Jokermon_menu_sorting_order_desc" },
+      value = self.settings.sorting_order,
+      free_typing = false
+    })
+    self.menu_management:Divider({
+      h = self.menu_padding
+    })
+    self.menu_management:Button({
+      name = "JokermonApplySorting",
+      text = "Jokermon_menu_apply_sorting",
+      text_align = "center",
+      on_callback = function (item)
+        self:change_menu_setting(sorting)
+        self:change_menu_setting(order)
+        self:sort_jokers()
+        self:refresh_joker_list()
+      end
+    })
+
+    self.menu_jokermon_list = self.menu_management:Menu({
+      name = "JokermonList",
+      inherit_values = {
+        size = self.menu_items_size
+      },
+      align_method = "grid",
+      scrollbar = true,
+      max_height = menu_h - self.menu_management:Y() - order:Bottom() - self.menu_padding * 4
+    })
+  end
+
+  local floor = math.floor
+  function Jokermon:refresh_joker_list()
+    self.menu_nuzlocke:SetEnabled(not Utils:IsInHeist())
+    self.menu_management:SetEnabled(not Utils:IsInHeist())
+    self.menu_jokermon_list:ClearItems()
+    local sub_menu
+    for i, joker in ipairs(self.jokers) do
+      sub_menu = self.menu_jokermon_list:Holder({
+        name = "Joker" .. i,
+        border_visible = true,
+        w = self.menu_jokermon_list:W() / 2 - self.menu_padding * 2,
+        auto_height = true,
+        localized = false,
+        background_color = self.menu_grid_item_color,
+        offset = self.menu_padding,
+        inherit_values = {
+          offset = 0,
+          text_offset = { self.menu_padding, self.menu_padding / 4 }
+        }
+      })
+      sub_menu:Divider({
+        h = self.menu_padding / 2
+      })
+      sub_menu:Divider({
+        name = "JokerType" .. i,
+        text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit_name_key(joker.uname)), joker.level),
+        size = self.menu_items_size + 4
+      })
+      sub_menu:Divider({
+        name = "JokerHpExp" .. i,
+        text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = self:get_needed_exp(joker, 100), MISSINGEXP = self:get_needed_exp(joker, joker.level + 1) - joker.exp}),
+        size = self.menu_items_size - 4
+      })
+      sub_menu:Divider({
+        name = "JokerStats" .. i,
+        text = managers.localization:text("Jokermon_menu_stats", { DATE = os.date("%B %d, %Y", joker.stats.catch_date), LEVEL = joker.stats.catch_level or 1, HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN" }),
+        size = self.menu_items_size - 4,
+        foreground = Color.white:with_alpha(0.5)
+      })
+      sub_menu:TextBox({
+        name = "JokerNick" .. i,
+        text = "Jokermon_menu_nickname",
+        x = self.menu_padding,
+        localized = true,
+        value = joker.name,
+        on_callback = function (item)
+          joker.name = item:Value()
+          self:save(true)
+        end
+      })
+      sub_menu:NumberBox({
+        name = "JokerOrder" .. i,
+        text = "Jokermon_menu_order",
+        help = "Jokermon_menu_order_desc",
+        localized = true,
+        value = joker.order,
+        floats = 0,
+        on_callback = function (item)
+          joker.order = item:Value()
+          self:save(true)
+        end
+      })
+      sub_menu:Divider({
+        h = self.menu_padding
+      })
+      sub_menu:Button({
+        name = "JokerHeal" .. i,
+        text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(self:get_heal_price(joker))) })),
+        text_align = "right",
+        enabled = joker.hp_ratio < 1 and managers.money:total() >= self:get_heal_price(joker),
+        on_callback = function (item)
+          managers.money:deduct_from_spending(self:get_heal_price(joker))
+          joker.hp_ratio = 1
+          self:save(true)
+          self:refresh_joker_list()
+        end
+      })
+      sub_menu:Button({
+        name = "JokerRelease" .. i,
+        text = "Release",
+        text_align = "right",
+        on_callback = function (item)
+          table.remove(self.jokers, i)
+          self:save(true)
+          self:refresh_joker_list()
+        end
+      })
+      sub_menu:Divider({
+        h = self.menu_padding / 2
+      })
+    end
+  end
+
+  function Jokermon:change_menu_setting(item)
+    self.settings[item:Name()] = item:Value()
+    self:save()
+  end
+
+  function Jokermon:set_menu_state(enabled)
+    self:check_create_menu()
+    if enabled then
+      self:refresh_joker_list()
+      self.menu:Enable()
+    else
+      self.menu:Disable()
+    end
   end
 
   Jokermon:load()
@@ -282,6 +700,7 @@ if not Jokermon then
       table.remove(Jokermon._queued_keys, 1)
     else
       -- Create new Jokermon entry
+      -- TODO: capture location, level, etc
       key = #Jokermon.jokers + 1
       local mul = (tweak_data:difficulty_to_index(Global.game_settings.difficulty) - 1) / (#tweak_data.difficulties - 1)
       local joker = {
@@ -291,9 +710,14 @@ if not Jokermon then
         hp = unit:character_damage()._HEALTH_INIT,
         hp_ratio = 1,
         level = math.max(1, math.floor(40 * mul + math.random(0, 10 + 10 * mul))),
-        exp = 0
+        order = 0
       }
       joker.exp = Jokermon:get_needed_exp(joker, joker.level)
+      joker.stats = {
+        catch_level = joker.level,
+        catch_date = os.time(),
+        catch_heist = managers.job:current_level_id()
+      }
 
       if Network:is_server() then
         Jokermon:add_joker(joker)
@@ -321,6 +745,9 @@ if not Jokermon then
       Jokermon:save(true)
       Jokermon:remove_panel(key)
       Jokermon.units[key] = nil
+      if Jokermon.settings.spawn_mode ~= 1 then
+        Jokermon:send_out_joker()
+      end
     end
     Jokermon._unit_id_mappings[unit:id()] = nil
   end)
@@ -395,125 +822,30 @@ if not Jokermon then
     loc:load_localization_file(loc_path .. "english.txt", false)
   end)
 
-  Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenusPlayerJokermon", function(menu_manager, nodes)
-
-    local menu_id_main = "JokermonMenu"
-    MenuHelper:NewMenu(menu_id_main)
-
-    MenuCallbackHandler.Jokermon_toggle = function(self, item)
-      Jokermon.settings[item:name()] = (item:value() == "on")
-      Jokermon:layout_panels()
-      Jokermon:save()
+  Hooks:Add("MenuManagerBuildCustomMenus", "MenuManagerBuildCustomMenusJokermon", function(menu_manager, nodes)
+  
+    MenuCallbackHandler.Jokermon_open_menu = function ()
+      Jokermon:set_menu_state(true)
     end
 
-    MenuCallbackHandler.Jokermon_value = function(self, item)
-      Jokermon.settings[item:name()] = item:value()
-      Jokermon:layout_panels()
-      Jokermon:save()
-    end
-
-    MenuHelper:AddToggle({
-      id = "nuzlocke",
-      title = "Jokermon_menu_nuzlocke",
-      desc = "Jokermon_menu_nuzlocke_desc",
-      callback = "Jokermon_toggle",
-      value = Jokermon.settings.nuzlocke,
-      menu_id = menu_id_main,
-      priority = 101
+    MenuHelperPlus:AddButton({
+      id = "JokermonMenu",
+      title = "Jokermon_menu_main_name",
+      desc = "Jokermon_menu_main_desc",
+      node_name = "blt_options",
+      callback = "Jokermon_open_menu"
     })
 
-    MenuHelper:AddDivider({
-      id = "div1",
-      size = 24,
-      menu_id = menu_id_main,
-      priority = 100
-    })
-
-    MenuHelper:AddMultipleChoice({
-      id = "panel_layout",
-      title = "Jokermon_menu_panel_layout",
-      callback = "Jokermon_value",
-      value = Jokermon.settings.panel_layout,
-      items = { "Jokermon_menu_panel_layout_vertical", "Jokermon_menu_panel_layout_horizontal" },
-      menu_id = menu_id_main,
-      priority = 99
-    })
-
-    MenuHelper:AddMultipleChoice({
-      id = "panel_x_align",
-      title = "Jokermon_menu_panel_x_align",
-      callback = "Jokermon_value",
-      value = Jokermon.settings.panel_x_align,
-      items = { "Jokermon_menu_panel_align_left", "Jokermon_menu_panel_align_center", "Jokermon_menu_panel_align_right" },
-      menu_id = menu_id_main,
-      priority = 98
-    })
-    MenuHelper:AddMultipleChoice({
-      id = "panel_y_align",
-      title = "Jokermon_menu_panel_y_align",
-      callback = "Jokermon_value",
-      value = Jokermon.settings.panel_y_align,
-      items = { "Jokermon_menu_panel_align_top", "Jokermon_menu_panel_align_center", "Jokermon_menu_panel_align_bottom" },
-      menu_id = menu_id_main,
-      priority = 97
-    })
-
-    MenuHelper:AddSlider({
-      id = "panel_x_pos",
-      title = "Jokermon_menu_panel_x_pos",
-      callback = "Jokermon_value",
-      value = Jokermon.settings.panel_x_pos,
-      min = 0,
-      max = 1,
-      step = 0.01,
-      show_value = true,
-      menu_id = menu_id_main,
-      priority = 96
-    })
-    MenuHelper:AddSlider({
-      id = "panel_y_pos",
-      title = "Jokermon_menu_panel_y_pos",
-      callback = "Jokermon_value",
-      value = Jokermon.settings.panel_y_pos,
-      min = 0,
-      max = 1,
-      step = 0.01,
-      show_value = true,
-      menu_id = menu_id_main,
-      priority = 95
-    })
-    MenuHelper:AddSlider({
-      id = "panel_spacing",
-      title = "Jokermon_menu_panel_spacing",
-      callback = "Jokermon_value",
-      value = Jokermon.settings.panel_spacing,
-      min = 0,
-      max = 256,
-      step = 1,
-      show_value = true,
-      menu_id = menu_id_main,
-      priority = 94
-    })
-    
-    MenuHelper:AddDivider({
-      id = "div2",
-      size = 24,
-      menu_id = menu_id_main,
-      priority = 90
-    })
-    
-    MenuHelper:AddToggle({
-      id = "show_messages",
-      title = "Jokermon_menu_show_messages",
-      desc = "Jokermon_menu_show_messages_desc",
-      callback = "Jokermon_toggle",
-      value = Jokermon.settings.show_messages,
-      menu_id = menu_id_main,
-      priority = 89
-    })
-
-    nodes[menu_id_main] = MenuHelper:BuildMenu(menu_id_main, { area_bg = "half" })
-    MenuHelper:AddMenuItem(nodes["blt_options"], menu_id_main, "Jokermon_menu_main_name", "Jokermon_menu_main_desc")
+    local mod = BLT.Mods:GetModOwnerOfFile(Jokermon.mod_path)
+    BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_menu", allow_menu = true, allow_game = true, show_in_menu = false, callback = function()
+      Jokermon:set_menu_state(true)
+    end })
+    BLT.Keybinds:get_keybind("jokermon_key_menu"):SetKey(Jokermon.settings.key_menu)
+    BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
+      Jokermon:send_out_joker()
+    end })
+    BLT.Keybinds:get_keybind("jokermon_key_spawn_joker"):SetKey(Jokermon.settings.key_spawn_joker)
+  
   end)
   
 end
