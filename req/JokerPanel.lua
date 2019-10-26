@@ -121,7 +121,7 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
   if instant then
     self._hp_bar:set_color(hp_ratio_to_color(hp_ratio))
     self._hp_bar:set_w(max_w * hp_ratio)
-    self._hp_text:set_text(math.ceil(hp * hp_ratio * 10) .. "/" .. math.ceil(hp * 10))
+    self._hp_text:set_text(math.ceil(hp * hp_ratio * 10) .. " / " .. math.ceil(hp * 10))
   else
     local start = self._hp_ratio
     self._hp_bar:animate(function ()
@@ -129,7 +129,7 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
         local f = math.lerp(start, hp_ratio, p)
         self._hp_bar:set_color(hp_ratio_to_color(f))
         self._hp_bar:set_w(max_w * f)
-        self._hp_text:set_text(math.ceil(hp * f * 10) .. "/" .. math.ceil(hp * 10))
+        self._hp_text:set_text(math.ceil(hp * f * 10) .. " / " .. math.ceil(hp * 10))
       end)
     end)
   end
