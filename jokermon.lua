@@ -620,7 +620,7 @@ if not Jokermon then
       })
       sub_menu:Divider({
         name = "JokerType" .. i,
-        text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit_name_key(joker.uname)), joker.level),
+        text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit_name_key(joker.uname) or "UNKNOWN"), joker.level),
         size = self.menu_items_size + 4
       })
       sub_menu:Divider({
@@ -748,10 +748,10 @@ if not Jokermon then
 
   function Jokermon:set_menu_state(enabled)
     self:check_create_menu()
-    if enabled then
+    if enabled and not self.menu:Enabled() then
       self:refresh_joker_list()
       self.menu:Enable()
-    else
+    elseif not enabled then
       self.menu:Disable()
     end
   end
@@ -899,9 +899,7 @@ if not Jokermon then
     Jokermon:load()
 
     MenuCallbackHandler.Jokermon_open_menu = function ()
-      if not Jokermon.menu:Enabled() then
-        Jokermon:set_menu_state(true)
-      end
+      Jokermon:set_menu_state(true)
     end
 
     MenuHelperPlus:AddButton({
@@ -912,7 +910,8 @@ if not Jokermon then
       callback = "Jokermon_open_menu"
     })
 
-    local mod = BLT.Mods:GetModOwnerOfFile(Jokermon.mod_path)
+    local mod = BLT.Mods:GetMod("Jokermon")
+    if not mod then return end
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_menu", allow_menu = true, allow_game = true, show_in_menu = false, callback = function()
       Jokermon:set_menu_state(true)
     end })
