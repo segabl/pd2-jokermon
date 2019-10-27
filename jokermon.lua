@@ -17,8 +17,10 @@ if not Jokermon then
     spawn_mode = 1,
     sorting = 1,
     sorting_order = 1,
-    key_menu = "m",
-    key_spawn_joker = "j"
+    keys = {
+      menu = "m",
+      spawn_joker = "j"
+    }
   }
   Jokermon.jokers = {}
   Jokermon.panels = {}
@@ -518,20 +520,20 @@ if not Jokermon then
       name = "key_menu",
       text = "Jokermon_menu_key_menu",
       help = "Jokermon_menu_key_menu_desc",
-      value = self.settings.key_menu,
+      value = self.settings.keys.menu,
       on_callback = function (item)
         self:change_menu_setting(item)
-        BLT.Keybinds:get_keybind("jokermon_key_menu"):SetKey(self.settings.key_menu)
+        BLT.Keybinds:get_keybind("jokermon_key_menu"):SetKey(self.settings.keys.menu)
       end
     })
     keybinds:KeyBind({
       name = "key_spawn_joker",
       text = "Jokermon_menu_key_spawn_joker",
       help = "Jokermon_menu_key_spawn_joker_desc",
-      value = self.settings.key_spawn_joker,
+      value = self.settings.keys.spawn_joker,
       on_callback = function (item)
         self:change_menu_setting(item)
-        BLT.Keybinds:get_keybind("jokermon_key_spawn_joker"):SetKey(self.settings.key_spawn_joker)
+        BLT.Keybinds:get_keybind("jokermon_key_spawn_joker"):SetKey(self.settings.keys.spawn_joker)
       end
     })
   
@@ -923,10 +925,10 @@ if not Jokermon then
     end
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_menu", allow_menu = true, allow_game = true, show_in_menu = false, callback = function()
       Jokermon:set_menu_state(true)
-    end }):SetKey(Jokermon.settings.key_menu)
+    end }):SetKey(Jokermon.settings.keys.menu)
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
       Jokermon:send_out_joker()
-    end }):SetKey(Jokermon.settings.key_spawn_joker)
+    end }):SetKey(Jokermon.settings.keys.spawn_joker)
   
   end)
   
