@@ -916,16 +916,17 @@ if not Jokermon then
       callback = "Jokermon_open_menu"
     })
 
-    local mod = BLT.Mods:GetMod("Jokermon")
-    if not mod then return end
+    local mod = BLT.Mods:GetMod(Jokermon.mod_path:gsub(".+/(.+)/$", "%1"))
+    if not mod then
+      log("[Jokermon] ERROR: Could not get mod object to register keybinds!")
+      return
+    end
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_menu", allow_menu = true, allow_game = true, show_in_menu = false, callback = function()
       Jokermon:set_menu_state(true)
-    end })
-    BLT.Keybinds:get_keybind("jokermon_key_menu"):SetKey(Jokermon.settings.key_menu)
+    end }):SetKey(Jokermon.settings.key_menu)
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
       Jokermon:send_out_joker()
-    end })
-    BLT.Keybinds:get_keybind("jokermon_key_spawn_joker"):SetKey(Jokermon.settings.key_spawn_joker)
+    end }):SetKey(Jokermon.settings.key_spawn_joker)
   
   end)
   
