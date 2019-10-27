@@ -38,12 +38,14 @@ if not Jokermon then
   end
 
   function Jokermon:send_out_joker(num)
-    if not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached() then
+    local player = managers.player:local_player()
+    if not player or not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached() then
       return
     end
     for i, joker in ipairs(self.jokers) do
-      if not self.units[i] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, i) and self:spawn(joker, i, managers.player:local_player()) then
+      if not self.units[i] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, i) and self:spawn(joker, i, player) then
         self:display_message(managers.localization:text("Jokermon_message_go", { NAME = joker.name }))
+        player:sound_source():post_event("grenade_gas_npc_fire")
         break
       end
     end
