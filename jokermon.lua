@@ -31,8 +31,8 @@ if not Jokermon then
   Jokermon._unit_id_mappings = {}
   Jokermon._jokers_added = 0
 
-  function Jokermon:display_message(message)
-    if Jokermon.settings.show_messages then
+  function Jokermon:display_message(message, force)
+    if force or Jokermon.settings.show_messages then
       managers.chat:_receive_message(1, "JOKERMON", message, tweak_data.system_chat_color)
     end
   end

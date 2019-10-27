@@ -89,5 +89,6 @@
   "Jokermon_message_levelup" : "$NAME reached level $LEVEL!",
   "Jokermon_message_capture" : "Captured level $LEVEL $NAME!",
   "Jokermon_message_no_company" : "$NAME can't accompany you on this heist.",
-  "Jokermon_message_go" : "Go, $NAME!"
+  "Jokermon_message_go" : "Go, $NAME!",
+  "Jokermon_message_box_full" : "Your box is full! Please release one or more Jokers to capture new ones!"
 }
