@@ -787,7 +787,7 @@ if not Jokermon then
       local mul = (tweak_data:difficulty_to_index(Global.game_settings.difficulty) - 1) / (#tweak_data.difficulties - 1)
       local joker = {
         tweak = unit:base()._tweak_table,
-        uname = unit:name():key(),
+        uname = Network:is_server() and unit:name():key() or NameProvider.CLIENT_TO_SERVER_MAPPING[unit:name():key()],
         name = HopLib:unit_info_manager():get_info(unit):nickname(),
         hp = unit:character_damage()._HEALTH_INIT,
         hp_ratio = 1,
@@ -802,15 +802,8 @@ if not Jokermon then
         catch_difficulty = Global.game_settings.difficulty
       }
 
-      if Network:is_server() then
-        Jokermon:add_joker(joker)
-        Jokermon:setup_joker(key, unit, joker)
-      else
-        local u_base = unit:base()
-        u_base._jokermon_queued_key = key
-        u_base._jokermon_queued_joker = joker
-        LuaNetworking:SendToPeer(1, "jokermon_request_uname", json.encode(uid))
-      end
+      Jokermon:add_joker(joker)
+      Jokermon:setup_joker(key, unit, joker)
 
       Jokermon._jokers_added = Jokermon._jokers_added + 1
     end
@@ -863,21 +856,6 @@ if not Jokermon then
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
     if id == "jokermon_request_spawn" then
       Jokermon:spawn(json.decode(data), nil, LuaNetworking:GetPeers()[sender]:unit())
-    elseif id == "jokermon_request_uname" then
-      local uid = json.decode(data)
-      local unit = Jokermon._unit_id_mappings[uid]
-      if alive(unit) then
-        LuaNetworking:SendToPeer(sender, "jokermon_uname", json.encode({ uid = uid, uname = unit:name():key() }))
-      end
-    elseif id == "jokermon_uname" then
-      data = json.decode(data)
-      local unit = Jokermon._unit_id_mappings[data.uid]
-      if alive(unit) then
-        local u_base = unit:base()
-        u_base._jokermon_queued_joker.uname = data.uname
-        Jokermon:add_joker(u_base._jokermon_queued_joker)
-        Jokermon:setup_joker(u_base._jokermon_queued_key, unit, u_base._jokermon_queued_joker)
-      end
     elseif id == "jokermon_stats" then
       data = json.decode(data)
       Jokermon:set_unit_stats(Jokermon._unit_id_mappings[data.uid], data)
