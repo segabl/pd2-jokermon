@@ -37,9 +37,9 @@ if not Jokermon then
     end
   end
 
-  function Jokermon:send_out_joker(num)
+  function Jokermon:send_out_joker(num, skip_check)
     local player = managers.player:local_player()
-    if not player or not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached() then
+    if not player or not skip_check and (not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached()) then
       return
     end
     for i, joker in ipairs(self.jokers) do
@@ -829,7 +829,7 @@ if not Jokermon then
       Jokermon:remove_panel(key)
       Jokermon.units[key] = nil
       if Jokermon.settings.spawn_mode ~= 1 then
-        Jokermon:send_out_joker()
+        Jokermon:send_out_joker(1, true)
       end
     end
     Jokermon._unit_id_mappings[unit:id()] = nil
