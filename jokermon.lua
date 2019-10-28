@@ -519,23 +519,21 @@ if not Jokermon then
       position = { self.menu_padding, panel_settings:Bottom() }
     })
     keybinds:KeyBind({
-      name = "key_menu",
+      name = "menu",
       text = "Jokermon_menu_key_menu",
       help = "Jokermon_menu_key_menu_desc",
       value = self.settings.keys.menu,
       on_callback = function (item)
-        self:change_menu_setting(item)
-        BLT.Keybinds:get_keybind("jokermon_key_menu"):SetKey(self.settings.keys.menu)
+        self:change_key_binding(item)
       end
     })
     keybinds:KeyBind({
-      name = "key_spawn_joker",
+      name = "spawn_joker",
       text = "Jokermon_menu_key_spawn_joker",
       help = "Jokermon_menu_key_spawn_joker_desc",
       value = self.settings.keys.spawn_joker,
       on_callback = function (item)
-        self:change_menu_setting(item)
-        BLT.Keybinds:get_keybind("jokermon_key_spawn_joker"):SetKey(self.settings.keys.spawn_joker)
+        self:change_key_binding(item)
       end
     })
   
@@ -643,6 +641,7 @@ if not Jokermon then
         localized = true,
         fit_text = true,
         value = joker.name,
+        focus_mode = true,
         on_callback = function (item)
           joker.name = item:Value()
           self:save(true)
@@ -671,6 +670,7 @@ if not Jokermon then
         value = joker.order,
         floats = 0,
         size = self.menu_items_size - 4,
+        focus_mode = true,
         on_callback = function (item)
           joker.order = item:Value()
           self:save(true)
@@ -753,6 +753,12 @@ if not Jokermon then
 
   function Jokermon:change_menu_setting(item)
     self.settings[item:Name()] = item:Value()
+    self:save()
+  end
+
+  function Jokermon:change_key_binding(item)
+    self.settings.keys[item:Name()] = item:Value()
+    BLT.Keybinds:get_keybind("jokermon_" .. item:Name()):SetKey(item:Value())
     self:save()
   end
 
@@ -903,10 +909,10 @@ if not Jokermon then
       log("[Jokermon] ERROR: Could not get mod object to register keybinds!")
       return
     end
-    BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_menu", allow_menu = true, allow_game = true, show_in_menu = false, callback = function()
+    BLT.Keybinds:register_keybind(mod, { id = "jokermon_menu", allow_menu = true, allow_game = true, show_in_menu = false, callback = function()
       Jokermon:set_menu_state(true)
     end }):SetKey(Jokermon.settings.keys.menu)
-    BLT.Keybinds:register_keybind(mod, { id = "jokermon_key_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
+    BLT.Keybinds:register_keybind(mod, { id = "jokermon_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
       Jokermon:send_out_joker()
     end }):SetKey(Jokermon.settings.keys.spawn_joker)
   
