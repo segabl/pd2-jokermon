@@ -90,5 +90,6 @@
   "Jokermon_message_capture" : "$NAME Level $LEVEL wurde gefangen!",
   "Jokermon_message_no_company" : "$NAME kann dich nicht auf diesem Raubzug begleiten.",
   "Jokermon_message_go" : "Los, $NAME!",
+  "Jokermon_message_nuzlocke" : "Du kannst auf diesem Raubzug keine weiteren Joker bekommen (Nuzlocke Regeln)!",
   "Jokermon_message_box_full" : "Deine Box ist voll! Bitte lasse einen oder mehrere Joker frei um einen neuen zu fangen!"
 }

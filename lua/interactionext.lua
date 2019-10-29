@@ -12,10 +12,11 @@ function IntimitateInteractionExt:_interact_blocked(player, ...)
   -- Refuse cop convert if nuzlocke mode is on and the max amount is reached or box is full
   if self.tweak_data == "hostage_convert" then
     if Jokermon.settings.nuzlocke and Jokermon._jokers_added >= managers.player:upgrade_value("player", "convert_enemies_max_minions", 0) then
+      Jokermon:display_message("Jokermon_message_nuzlocke", nil, true)
       return true
     end
     if #Jokermon.jokers >= 30 then
-      Jokermon:display_message(managers.localization:text("Jokermon_message_box_full"), true)
+      Jokermon:display_message("Jokermon_message_box_full", nil, true)
       return true
     end
   end

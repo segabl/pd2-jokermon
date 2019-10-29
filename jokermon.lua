@@ -31,9 +31,9 @@ if not Jokermon then
   Jokermon._unit_id_mappings = {}
   Jokermon._jokers_added = 0
 
-  function Jokermon:display_message(message, force)
+  function Jokermon:display_message(message, macros, force)
     if force or Jokermon.settings.show_messages then
-      managers.chat:_receive_message(1, "JOKERMON", message, tweak_data.system_chat_color)
+      managers.chat:_receive_message(1, "JOKERMON", managers.localization:text(message, macros), tweak_data.system_chat_color)
     end
   end
 
@@ -44,7 +44,7 @@ if not Jokermon then
     end
     for i, joker in ipairs(self.jokers) do
       if not self.units[i] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, i) and self:spawn(joker, i, player) then
-        self:display_message(managers.localization:text("Jokermon_message_go", { NAME = joker.name }))
+        self:display_message("Jokermon_message_go", { NAME = joker.name })
         player:sound_source():post_event("grenade_gas_npc_fire")
         break
       end
@@ -74,7 +74,7 @@ if not Jokermon then
       self:queue_unit_convert(unit, is_local_player, player_unit, joker)
       return true
     elseif is_local_player then
-      self:display_message(managers.localization:text("Jokermon_message_no_company", { NAME = joker.name }))
+      self:display_message("Jokermon_message_no_company", { NAME = joker.name })
     end
   end
 
@@ -105,11 +105,6 @@ if not Jokermon then
     DelayedCalls:Add("ConvertJokermon", 0.5, function ()
       Jokermon:_convert_queued_units()
     end)
-  end
-
-  function Jokermon:add_joker(joker)
-    table.insert(self.jokers, joker)
-    self:display_message(managers.localization:text("Jokermon_message_capture", { NAME = joker.name, LEVEL = joker.level }))
   end
 
   function Jokermon:setup_joker(key, unit, joker)
@@ -188,7 +183,7 @@ if not Jokermon then
           panel:update_level(joker.level)
           panel:update_exp(0, true)
         end
-        self:display_message(managers.localization:text("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level }))
+        self:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
       end
       if joker.level >= 100 then
         joker.exp = self:level_to_exp(joker)
@@ -298,12 +293,7 @@ if not Jokermon then
     if full_save then
       file = io.open(self.save_path .. "jokermon.txt", "w+")
       if file then
-        local jokers = self.jokers
-        if self.settings.nuzlocke then
-          jokers = table.filter_list(self.jokers, function (j)
-            return j.hp_ratio > 0
-          end)
-        end
+        local jokers = self.settings.nuzlocke and table.filter_list(self.jokers, function (j) return j.hp_ratio > 0 end) or self.jokers
         file:write(json.encode(jokers))
         file:close()
       end
@@ -337,7 +327,7 @@ if not Jokermon then
     self.menu_items_size = 18
     self.menu_padding = 16
     self.menu_background_color = Color.black:with_alpha(0.75)
-    self.menu_accent_color = Color("0bce99"):with_alpha(0.75)
+    self.menu_accent_color = BeardLib.Options:GetValue("MenuColor"):with_alpha(0.75)--Color("0bce99"):with_alpha(0.75)
     self.menu_highlight_color = self.menu_accent_color:with_alpha(0.075)
     self.menu_grid_item_color = Color.black:with_alpha(0.5)
   
@@ -784,6 +774,10 @@ if not Jokermon then
     if key then
       -- Use existing Jokermon entry
       local joker = Jokermon.jokers[key]
+      local uname = Network:is_server() and unit:name():key() or NameProvider.CLIENT_TO_SERVER_MAPPING[unit:name():key()]
+      if joker.uname ~= uname then
+        log("[Jokermon] Warning: Requested " .. NameProvider.UNIT_MAPPIGS[joker.uname] .. " but got " .. NameProvider.UNIT_MAPPIGS[uname])
+      end
       Jokermon:set_unit_stats(unit, joker, true)
       Jokermon:setup_joker(key, unit, joker)
       table.remove(Jokermon._queued_keys, 1)
@@ -808,7 +802,8 @@ if not Jokermon then
         catch_difficulty = Global.game_settings.difficulty
       }
 
-      Jokermon:add_joker(joker)
+      Jokermon:display_message("Jokermon_message_capture", { NAME = joker.name, LEVEL = joker.level })
+      table.insert(Jokermon.jokers, joker)
       Jokermon:setup_joker(key, unit, joker)
 
       Jokermon._jokers_added = Jokermon._jokers_added + 1
@@ -822,7 +817,7 @@ if not Jokermon then
     if joker then
       joker.hp_ratio = unit:character_damage()._health_ratio
       if joker.hp_ratio <= 0 then
-        Jokermon:display_message(managers.localization:text(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name }))
+        Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
         Jokermon:save(true)
       end
       Jokermon:remove_panel(key)
