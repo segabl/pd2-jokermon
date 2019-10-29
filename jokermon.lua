@@ -628,7 +628,7 @@ if not Jokermon then
       })
       sub_menu:Divider({
         name = "JokerType" .. i,
-        text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit_name_key(joker.uname) or "UNKNOWN"), joker.level),
+        text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN"), joker.level),
         size = self.menu_items_size + 4
       })
       sub_menu:Divider({
