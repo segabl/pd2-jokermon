@@ -27,8 +27,8 @@
   "Jokermon_menu_keybinds" : "Tastenkombinationen",
   "Jokermon_menu_key_menu" : "Menü Schnellzugriff",
   "Jokermon_menu_key_menu_desc" : "Taste um das Jokermon Menü aufzurufen",
-  "Jokermon_menu_key_spawn_joker" : "Joker raus schicken",
-  "Jokermon_menu_key_spawn_joker_desc" : "Taste um einen Joker rauszuschicken falls \"Joker Spawn Modus\" auf \"Manuell\" gesetzt ist",
+  "Jokermon_menu_key_spawn_joker" : "Joker Steuerung",
+  "Jokermon_menu_key_spawn_joker_desc" : "Taste um einen Joker rauszuschicken oder zurückzurufen. Ruft den Joker zurück, den du ansiehst wenn du die Taste drückst",
   "Jokermon_menu_management" : "Joker verwalten",
   "Jokermon_menu_sorting" : "Sortierung",
   "Jokermon_menu_sorting_desc" : "Wie die Jokerliste sortiert werden soll. Wirkt sich auf die Reihenfolge aus, in der die Joker während eines Raubzuges rausgeschickt werden",
@@ -90,6 +90,7 @@
   "Jokermon_message_capture" : "$NAME Level $LEVEL wurde gefangen!",
   "Jokermon_message_no_company" : "$NAME kann dich nicht auf diesem Raubzug begleiten.",
   "Jokermon_message_go" : "Los, $NAME!",
+  "Jokermon_message_retrieve" : "$NAME, komm zurück!",
   "Jokermon_message_nuzlocke" : "Du kannst auf diesem Raubzug keine weiteren Joker bekommen (Nuzlocke Regeln)!",
   "Jokermon_message_box_full" : "Deine Box ist voll! Bitte lasse einen oder mehrere Joker frei um einen neuen zu fangen!"
 }

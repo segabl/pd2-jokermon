@@ -27,8 +27,8 @@
   "Jokermon_menu_keybinds" : "Keybinds",
   "Jokermon_menu_key_menu" : "Menu shortcut",
   "Jokermon_menu_key_menu_desc" : "Keybind to open the Jokermon menu",
-  "Jokermon_menu_key_spawn_joker" : "Send out Joker",
-  "Jokermon_menu_key_spawn_joker_desc" : "Keybind to send out a Joker if \"Joker spawn mode\" is set to \"Manual\"",
+  "Jokermon_menu_key_spawn_joker" : "Joker control",
+  "Jokermon_menu_key_spawn_joker_desc" : "Keybind to send out or call back a Joker. Calls back the Joker you're looking at when you press the key",
   "Jokermon_menu_management" : "Manage Jokers",
   "Jokermon_menu_sorting" : "Sorting",
   "Jokermon_menu_sorting_desc" : "How to sort the list of Jokers. Affects the order in which they are sent out in a heist",
@@ -90,6 +90,7 @@
   "Jokermon_message_capture" : "Captured level $LEVEL $NAME!",
   "Jokermon_message_no_company" : "$NAME can't accompany you on this heist.",
   "Jokermon_message_go" : "Go, $NAME!",
+  "Jokermon_message_retrieve" : "$NAME, come back!",
   "Jokermon_message_nuzlocke" : "You can't get any more Jokers on this heist (Nuzlocke rules)!",
   "Jokermon_message_box_full" : "Your box is full! Please release one or more Jokers to capture new ones!"
 }

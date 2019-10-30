@@ -30,6 +30,8 @@ if not Jokermon then
   Jokermon._queued_converts = {}
   Jokermon._unit_id_mappings = {}
   Jokermon._jokers_added = 0
+  Jokermon._joker_index = 1
+  Jokermon._joker_slot = World:make_slot_mask(16)
 
   function Jokermon:display_message(message, macros, force)
     if force or Jokermon.settings.show_messages then
@@ -37,19 +39,49 @@ if not Jokermon then
     end
   end
 
+  local to_vec = Vector3()
+  function Jokermon:send_or_retrieve_joker()
+    local viewport = managers.viewport
+    if viewport:get_current_camera() then
+      local from = viewport:get_current_camera_position()
+      mvector3.set(to_vec, viewport:get_current_camera_rotation():y())
+      mvector3.multiply(to_vec, 1000)
+      mvector3.add(to_vec, from)
+      local col = World:raycast("ray", from, to_vec, "slot_mask", Jokermon._joker_slot)
+      if col and col.unit and col.unit:base()._jokermon_key then
+        return self:retrieve_joker(col.unit)
+      end
+    end
+    return self:send_out_joker()
+  end
+
   function Jokermon:send_out_joker(num, skip_check)
     local player = managers.player:local_player()
     if not player or not skip_check and (not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached()) then
       return
     end
-    for i, joker in ipairs(self.jokers) do
-      if not self.units[i] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, i) and self:spawn(joker, i, player) then
-        self:display_message("Jokermon_message_go", { NAME = joker.name })
-        player:sound_source():post_event("grenade_gas_npc_fire")
+    local index, joker
+    for i = self._joker_index, self._joker_index + #self.jokers do
+      index = ((i - 1) % #self.jokers) + 1
+      joker = self.jokers[index]
+      if not self.units[index] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, index) and self:spawn(joker, index, player) then
+        self._joker_index = index + 1
         break
       end
     end
     return num and num > 1 and self:send_out_joker(num - 1)
+  end
+
+  function Jokermon:retrieve_joker(unit)
+    if not alive(unit) then
+      return
+    end
+    if Network:is_server() then
+      unit:brain():set_active(false)
+      unit:base():set_slot(unit, 0)
+    else
+      LuaNetworking:SendToPeer(1, "jokermon_retrieve", json.encode({ uid = unit:id() }))
+    end
   end
 
   function Jokermon:spawn(joker, index, player_unit)
@@ -65,7 +97,7 @@ if not Jokermon then
       end
       -- If we are client, request spawn from server
       if Network:is_client() then
-        LuaNetworking:SendToPeer(1, "jokermon_request_spawn", json.encode({ uname = joker.uname, name = joker.name }))
+        LuaNetworking:SendToPeer(1, "jokermon_spawn", json.encode({ uname = joker.uname, name = joker.name }))
         return true
       end
       local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-50, 50), math.random(-50, 50), 0), player_unit:rotation())
@@ -102,7 +134,7 @@ if not Jokermon then
       joker = joker
     })
     -- Convert all queued units after a short delay (Resets the delayed call if it already exists)
-    DelayedCalls:Add("ConvertJokermon", 0.5, function ()
+    DelayedCalls:Add("ConvertJokermon", 0.25, function ()
       Jokermon:_convert_queued_units()
     end)
   end
@@ -781,6 +813,9 @@ if not Jokermon then
       Jokermon:set_unit_stats(unit, joker, true)
       Jokermon:setup_joker(key, unit, joker)
       table.remove(Jokermon._queued_keys, 1)
+
+      Jokermon:display_message("Jokermon_message_go", { NAME = joker.name })
+      player_unit:sound_source():post_event("grenade_gas_npc_fire")
     else
       -- Create new Jokermon entry
       key = #Jokermon.jokers + 1
@@ -818,7 +853,8 @@ if not Jokermon then
       joker.hp_ratio = unit:character_damage()._health_ratio
       if joker.hp_ratio <= 0 then
         Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
-        Jokermon:save(true)
+      else
+        Jokermon:display_message("Jokermon_message_retrieve", { NAME = joker.name })
       end
       Jokermon:remove_panel(key)
       Jokermon.units[key] = nil
@@ -855,7 +891,7 @@ if not Jokermon then
   end)
 
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
-    if id == "jokermon_request_spawn" then
+    if id == "jokermon_spawn" then
       Jokermon:spawn(json.decode(data), nil, LuaNetworking:GetPeers()[sender]:unit())
     elseif id == "jokermon_stats" then
       data = json.decode(data)
@@ -863,6 +899,9 @@ if not Jokermon then
     elseif id == "jokermon_name" then
       data = json.decode(data)
       Jokermon:set_joker_name(Jokermon._unit_id_mappings[data.uid], data.name)
+    elseif id == "jokermon_retrieve" then
+      data = json.decode(data)
+      Jokermon:retrieve_joker(Jokermon._unit_id_mappings[data.uid])
     end
   end)
 
@@ -908,7 +947,7 @@ if not Jokermon then
       Jokermon:set_menu_state(true)
     end }):SetKey(Jokermon.settings.keys.menu)
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
-      Jokermon:send_out_joker()
+      Jokermon:send_or_retrieve_joker()
     end }):SetKey(Jokermon.settings.keys.spawn_joker)
   
   end)
