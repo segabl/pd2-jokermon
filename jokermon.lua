@@ -60,6 +60,9 @@ if not Jokermon then
     if not player or not skip_check and (not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached()) then
       return
     end
+    if #self.jokers == 0 then
+      return
+    end
     local index, joker
     for i = self._joker_index, self._joker_index + #self.jokers do
       index = ((i - 1) % #self.jokers) + 1
@@ -134,7 +137,7 @@ if not Jokermon then
       joker = joker
     })
     -- Convert all queued units after a short delay (Resets the delayed call if it already exists)
-    DelayedCalls:Add("ConvertJokermon", 0.25, function ()
+    DelayedCalls:Add("ConvertJokermon", 0.5, function ()
       Jokermon:_convert_queued_units()
     end)
   end
