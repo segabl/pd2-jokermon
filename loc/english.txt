@@ -11,6 +11,8 @@
   "Jokermon_menu_show_messages" : "Show messages",
   "Jokermon_menu_show_messages_desc" : "Show messages for certain events in chat (only client-side)",
   "Jokermon_menu_panel_settings" : "Panel Settings",
+  "Jokermon_menu_show_panels" : "Enable panels",
+  "Jokermon_menu_show_panels_desc" : "Display Joker panels with level, HP and EXP on the screen during a heist",
   "Jokermon_menu_panel_layout" : "Panel layout",
   "Jokermon_menu_panel_layout_vertical" : "Vertical",
   "Jokermon_menu_panel_layout_horizontal" : "Horizontal",

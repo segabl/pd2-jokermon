@@ -7,6 +7,7 @@ if not Jokermon then
   Jokermon.save_path = SavePath
   Jokermon.settings = {
     nuzlocke = false,
+    show_panels = true,
     panel_x_pos = 0.03,
     panel_y_pos = 0.2,
     panel_spacing = 8,
@@ -296,7 +297,7 @@ if not Jokermon then
   end
 
   function Jokermon:add_panel(key, joker)
-    local hud = managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
+    local hud = self.settings.show_panels and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
     if not hud then
       return
     end
@@ -456,6 +457,13 @@ if not Jokermon then
       border_position_below_title = true,
       w = self._menu_w_left,
       position = { self.menu_padding, base_settings:Bottom() }
+    })
+    panel_settings:Toggle({
+      name = "show_panels",
+      text = "Jokermon_menu_show_panels",
+      help = "Jokermon_menu_show_panels_desc",
+      on_callback = function (item) self:change_menu_setting(item) end,
+      value = self.settings.show_panels
     })
     panel_settings:ComboBox({
       name = "panel_layout",
