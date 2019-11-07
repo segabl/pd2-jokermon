@@ -138,7 +138,7 @@ if not Jokermon then
       joker = joker
     })
     -- Convert all queued units after a short delay (Resets the delayed call if it already exists)
-    DelayedCalls:Add("ConvertJokermon", 0.5, function ()
+    DelayedCalls:Add("ConvertJokermon", 0.25, function ()
       Jokermon:_convert_queued_units()
     end)
   end
@@ -270,7 +270,6 @@ if not Jokermon then
       end
       return c(va, vb)
     end)
-    self:save(true)
   end
 
   function Jokermon:layout_panels()
@@ -423,7 +422,7 @@ if not Jokermon then
       on_callback = function (item)
         self:change_menu_setting(item)
         if self.settings.spawn_mode > 1 and Utils:IsInHeist() then
-          Jokermon:send_out_joker(managers.player:upgrade_value("player", "convert_enemies_max_minions", 0))
+          self:send_out_joker(managers.player:upgrade_value("player", "convert_enemies_max_minions", 0))
         end
       end
     })
@@ -618,6 +617,7 @@ if not Jokermon then
         self:change_menu_setting(order)
         self:sort_jokers()
         self:refresh_joker_list()
+        self:save(true)
       end
     })
 
@@ -656,90 +656,95 @@ if not Jokermon then
           text_offset = { self.menu_padding, self.menu_padding / 4 }
         }
       })
-      sub_menu:Divider({
-        h = self.menu_padding / 2
-      })
-      sub_menu:Divider({
-        name = "JokerType" .. i,
-        text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN"), joker.level),
-        size = self.menu_items_size + 4
-      })
-      sub_menu:Divider({
-        name = "JokerHpExp" .. i,
-        text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = self:level_to_exp(joker, 100), MISSINGEXP = self:level_to_exp(joker, joker.level + 1) - joker.exp})
-      })
-      sub_menu:TextBox({
-        name = "JokerNick" .. i,
-        text = "Jokermon_menu_nickname",
-        localized = true,
-        fit_text = true,
-        value = joker.name,
-        focus_mode = true,
-        on_callback = function (item)
-          joker.name = item:Value()
-          self:save(true)
-        end
-      })
-      sub_menu:Divider({
-        h = self.menu_padding / 2
-      })
-      sub_menu:Divider({
-        name = "JokerTrivia" .. i,
-        text = managers.localization:text("Jokermon_menu_catch_stats", {
-          DATE = os.date("%B %d, %Y", joker.stats.catch_date),
-          LEVEL = joker.stats.catch_level or 1,
-          HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN",
-          DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty or "normal"])
-        }) .. "\n" .. managers.localization:text("Jokermon_menu_flavour_" .. pseudo_random(joker.stats.catch_date, 1, 30)),
-        size = self.menu_items_size - 4,
-        foreground = Color.white:with_alpha(0.5)
-      })
-      sub_menu:NumberBox({
-        name = "JokerOrder" .. i,
-        text = "Jokermon_menu_order",
-        help = "Jokermon_menu_order_desc",
-        localized = true,
-        fit_text = true,
-        value = joker.order,
-        floats = 0,
-        size = self.menu_items_size - 4,
-        focus_mode = true,
-        on_callback = function (item)
-          joker.order = item:Value()
-          self:save(true)
-        end
-      })
-      sub_menu:Divider({
-        h = self.menu_padding
-      })
-      sub_menu:Button({
-        name = "JokerHeal" .. i,
-        text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(self:get_heal_price(joker))) })),
-        text_align = "right",
-        enabled = joker.hp_ratio < 1 and managers.money:total() >= self:get_heal_price(joker),
-        on_callback = function (item)
-          managers.money:deduct_from_spending(self:get_heal_price(joker))
-          joker.hp_ratio = 1
-          self:save(true)
-          self:refresh_joker_list()
-        end
-      })
-      sub_menu:Button({
-        name = "JokerRelease" .. i,
-        text = "Jokermon_menu_action_release",
-        localized = true,
-        text_align = "right",
-        on_callback = function (item)
-          self:show_release_confirmation(i)
-        end
-      })
-      sub_menu:Divider({
-        h = self.menu_padding / 2
-      })
+      self:fill_joker_panel(sub_menu, i, joker)
     end
   end
 
-  function Jokermon:show_release_confirmation(index)
+  function Jokermon:fill_joker_panel(menu, i, joker)
+    menu:ClearItems()
+    menu:Divider({
+      h = self.menu_padding / 2
+    })
+    menu:Divider({
+      name = "JokerType" .. i,
+      text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN"), joker.level),
+      size = self.menu_items_size + 4
+    })
+    menu:Divider({
+      name = "JokerHpExp" .. i,
+      text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = self:level_to_exp(joker, 100), MISSINGEXP = self:level_to_exp(joker, joker.level + 1) - joker.exp})
+    })
+    menu:TextBox({
+      name = "JokerNick" .. i,
+      text = "Jokermon_menu_nickname",
+      localized = true,
+      fit_text = true,
+      value = joker.name,
+      focus_mode = true,
+      on_callback = function (item)
+        joker.name = item:Value()
+        self:save(true)
+      end
+    })
+    menu:Divider({
+      h = self.menu_padding / 2
+    })
+    menu:Divider({
+      name = "JokerTrivia" .. i,
+      text = managers.localization:text("Jokermon_menu_catch_stats", {
+        DATE = os.date("%B %d, %Y", joker.stats.catch_date),
+        LEVEL = joker.stats.catch_level or 1,
+        HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN",
+        DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty or "normal"])
+      }) .. "\n" .. managers.localization:text("Jokermon_menu_flavour_" .. pseudo_random(joker.stats.catch_date, 1, 30)),
+      size = self.menu_items_size - 4,
+      foreground = Color.white:with_alpha(0.5)
+    })
+    menu:NumberBox({
+      name = "JokerOrder" .. i,
+      text = "Jokermon_menu_order",
+      help = "Jokermon_menu_order_desc",
+      localized = true,
+      fit_text = true,
+      value = joker.order,
+      floats = 0,
+      size = self.menu_items_size - 4,
+      focus_mode = true,
+      on_callback = function (item)
+        joker.order = item:Value()
+        self:save(true)
+      end
+    })
+    menu:Divider({
+      h = self.menu_padding
+    })
+    menu:Button({
+      name = "JokerHeal" .. i,
+      text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(self:get_heal_price(joker))) })),
+      text_align = "right",
+      enabled = joker.hp_ratio < 1 and managers.money:total() >= self:get_heal_price(joker),
+      on_callback = function (item)
+        managers.money:deduct_from_spending(self:get_heal_price(joker))
+        joker.hp_ratio = 1
+        self:save(true)
+        self:fill_joker_panel(menu, i, joker)
+      end
+    })
+    menu:Button({
+      name = "JokerRelease" .. i,
+      text = "Jokermon_menu_action_release",
+      localized = true,
+      text_align = "right",
+      on_callback = function (item)
+        self:show_release_confirmation(i)
+      end
+    })
+    menu:Divider({
+      h = self.menu_padding / 2
+    })
+  end
+
+  function Jokermon:show_release_confirmation(i)
     local diag = MenuDialog:new({
       accent_color = self.menu_accent_color,
       highlight_color = self.menu_highlight_color,
@@ -752,7 +757,7 @@ if not Jokermon then
     })
     diag:Show({
       title = managers.localization:text("dialog_warning_title"),
-      message = managers.localization:text("Jokermon_menu_confirm_release", { NAME = self.jokers[index].name }),
+      message = managers.localization:text("Jokermon_menu_confirm_release", { NAME = self.jokers[i].name }),
       w = self.menu._panel:w() / 2,
       yes = false,
       title_merge = {
@@ -766,7 +771,7 @@ if not Jokermon then
           localized = true,
           on_callback = function (item)
             diag:hide()
-            table.remove(self.jokers, index)
+            table.remove(self.jokers, i)
             self:save(true)
             self:refresh_joker_list()
           end
@@ -848,7 +853,7 @@ if not Jokermon then
         catch_difficulty = Global.game_settings.difficulty
       }
 
-      Jokermon:display_message("Jokermon_message_capture", { NAME = joker.name, LEVEL = joker.level })
+      Jokermon:display_message("Jokermon_message_capture", { NAME = HopLib:unit_info_manager():get_info(unit):name(), LEVEL = joker.level })
       table.insert(Jokermon.jokers, joker)
       Jokermon:setup_joker(key, unit, joker)
 
