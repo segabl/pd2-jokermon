@@ -33,6 +33,7 @@ if not Jokermon then
   Jokermon._jokers_added = 0
   Jokermon._joker_index = 1
   Jokermon._joker_slot = World:make_slot_mask(16)
+  Jokermon._jokermon_key_press_t = 0
 
   function Jokermon:display_message(message, macros, force)
     if force or Jokermon.settings.show_messages then
@@ -42,6 +43,11 @@ if not Jokermon then
 
   local to_vec = Vector3()
   function Jokermon:send_or_retrieve_joker()
+    local t = managers.player:player_timer():time()
+    if self._jokermon_key_press_t + 1 > t then
+      return
+    end
+    self._jokermon_key_press_t = t
     local viewport = managers.viewport
     if viewport:get_current_camera() then
       local from = viewport:get_current_camera_position()
@@ -632,11 +638,6 @@ if not Jokermon then
     })
   end
 
-  local floor = math.floor
-  local pseudo_random = function (seed, ...)
-    math.randomseed(seed)
-    return math.random(...)
-  end
   function Jokermon:refresh_joker_list()
     self.menu_nuzlocke:SetEnabled(not Utils:IsInHeist())
     self.menu_management:SetEnabled(not Utils:IsInHeist())
@@ -660,6 +661,11 @@ if not Jokermon then
     end
   end
 
+  local floor = math.floor
+  local pseudo_random = function (seed, ...)
+    math.randomseed(seed)
+    return math.random(...)
+  end
   function Jokermon:fill_joker_panel(menu, i, joker)
     menu:ClearItems()
     menu:Divider({
@@ -692,7 +698,7 @@ if not Jokermon then
     menu:Divider({
       name = "JokerTrivia" .. i,
       text = managers.localization:text("Jokermon_menu_catch_stats", {
-        DATE = os.date("%B %d, %Y", joker.stats.catch_date),
+        DATE = os.date("%b %d, %Y", joker.stats.catch_date),
         LEVEL = joker.stats.catch_level or 1,
         HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN",
         DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty or "normal"])
@@ -718,13 +724,14 @@ if not Jokermon then
     menu:Divider({
       h = self.menu_padding
     })
+    local heal_price = self:get_heal_price(joker)
     menu:Button({
       name = "JokerHeal" .. i,
-      text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(self:get_heal_price(joker))) })),
+      text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price)) })),
       text_align = "right",
-      enabled = joker.hp_ratio < 1 and managers.money:total() >= self:get_heal_price(joker),
+      enabled = joker.hp_ratio < 1 and managers.money:total() >= heal_price,
       on_callback = function (item)
-        managers.money:deduct_from_spending(self:get_heal_price(joker))
+        managers.money:deduct_from_spending(heal_price)
         joker.hp_ratio = 1
         self:save(true)
         self:fill_joker_panel(menu, i, joker)
