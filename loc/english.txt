@@ -47,7 +47,7 @@
   "Jokermon_menu_sorting_order_desc" : "Descending",
   "Jokermon_menu_sorting_order_asc" : "Ascending",
   "Jokermon_menu_apply_sorting" : "Sort now",
-  "Jokermon_menu_hp_exp" : "$HP / $MAXHP HP ($HPRATIO%), $EXP / $TOTALEXP EXP ($MISSINGEXP to next level)",
+  "Jokermon_menu_hp_exp" : "$HP / $MAXHP HP ($HPRATIO%)\n$EXP / $TOTALEXP EXP ($MISSINGEXP to next level)",
   "Jokermon_menu_catch_stats" : "Captured on $DATE at level $LEVEL during $HEIST ($DIFFICULTY)",
   "Jokermon_menu_nickname" : "Nickname",
   "Jokermon_menu_order" : "Priority",

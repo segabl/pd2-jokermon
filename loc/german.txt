@@ -47,7 +47,7 @@
   "Jokermon_menu_sorting_order_desc" : "Absteigend",
   "Jokermon_menu_sorting_order_asc" : "Aufsteigend",
   "Jokermon_menu_apply_sorting" : "Jetzt sortieren",
-  "Jokermon_menu_hp_exp" : "$HP / $MAXHP HP ($HPRATIO%), $EXP / $TOTALEXP EXP ($MISSINGEXP fürs nächste Level)",
+  "Jokermon_menu_hp_exp" : "$HP / $MAXHP HP ($HPRATIO%)\n$EXP / $TOTALEXP EXP ($MISSINGEXP für nächstes Level)",
   "Jokermon_menu_catch_stats" : "Gefangen am $DATE auf Level $LEVEL während $HEIST ($DIFFICULTY)",
   "Jokermon_menu_nickname" : "Spitzname",
   "Jokermon_menu_order" : "Priorität",
