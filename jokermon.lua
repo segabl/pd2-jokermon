@@ -101,7 +101,7 @@ if not Jokermon then
     local is_local_player = player_unit == managers.player:local_player()
     local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
     local ids = xml and xml.id
-    if ids and PackageManager:unit_data(ids) then
+    if ids and PackageManager:has(Idstring("unit"), ids) then
       if is_local_player then
         table.insert(self._queued_keys, index)
       end
@@ -180,7 +180,10 @@ if not Jokermon then
   end
 
   function Jokermon:get_base_stats(joker)
-    return tweak_data.character[joker.tweak].jokermon_stats
+    return tweak_data.character[joker.tweak].jokermon_stats or {
+      base_hp = 8,
+      exp_rate = 2
+    }
   end
 
   function Jokermon:level_to_exp(joker, level)
