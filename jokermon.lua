@@ -674,14 +674,24 @@ if not Jokermon then
     menu:Divider({
       h = self.menu_padding / 2
     })
-    menu:Divider({
+    local title = menu:Divider({
       name = "JokerType" .. i,
       text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN"), joker.level),
       size = self.menu_items_size + 4
     })
+    menu:Button({
+      name = "JokerStats" .. i,
+      text = string.format("%u ", (joker.stats.kills or 0) + (joker.stats.special_kills or 0)),
+      help = managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills or 0, SPECIAL_KILLS = joker.stats.special_kills or 0, DAMAGE = floor((joker.stats.damage or 0) * 10) }),
+      help_localized = false,
+      size = self.menu_items_size + 4,
+      size_by_text = true,
+      highlight_color = Color.transparent,
+      position = function (item) item:SetRightTop(menu:W(), title:Y()) end
+    })
     menu:Divider({
       name = "JokerHpExp" .. i,
-      text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = self:level_to_exp(joker, 100), MISSINGEXP = self:level_to_exp(joker, joker.level + 1) - joker.exp})
+      text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = self:level_to_exp(joker, 100), MISSINGEXP = self:level_to_exp(joker, joker.level + 1) - joker.exp })
     })
     menu:TextBox({
       name = "JokerNick" .. i,
@@ -907,6 +917,15 @@ if not Jokermon then
       u_damage._jokermon_assists = u_damage._jokermon_assists or {}
       local dmg = u_damage._jokermon_assists[attacker_key]
       u_damage._jokermon_assists[attacker_key] = dmg and dmg + damage_info.damage or damage_info.damage
+      local attacker_joker = Jokermon.jokers[attacker_key]
+      if attacker_joker then
+        attacker_joker.stats.damage = (attacker_joker.stats.damage or 0) + damage_info.damage
+        if u_damage:dead() then
+          local info = HopLib:unit_info_manager():get_info(unit)
+          local cat = info and info:is_special() and "special_kills" or "kills"
+          attacker_joker.stats[cat] = (attacker_joker.stats[cat] or 0) + 1
+        end
+      end
     end
     if u_damage:dead() and u_damage._jokermon_assists then
       for key, dmg in pairs(u_damage._jokermon_assists) do
