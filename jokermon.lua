@@ -1,6 +1,7 @@
 if not Jokermon then
   _G.Jokermon = {}
   
+  dofile(ModPath .. "req/Joker.lua")
   dofile(ModPath .. "req/JokerPanel.lua")
 
   Jokermon.mod_path = ModPath
@@ -25,7 +26,6 @@ if not Jokermon then
   }
   Jokermon.jokers = {}
   Jokermon.panels = {}
-  Jokermon.units = {}
   Jokermon._num_panels = 0
   Jokermon._queued_keys = {}
   Jokermon._queued_converts = {}
@@ -34,6 +34,7 @@ if not Jokermon then
   Jokermon._joker_index = 1
   Jokermon._joker_slot = World:make_slot_mask(16)
   Jokermon._jokermon_key_press_t = 0
+  Jokermon._max_jokers = 30
 
   function Jokermon:display_message(message, macros, force)
     if force or Jokermon.settings.show_messages then
@@ -74,7 +75,7 @@ if not Jokermon then
     for i = self._joker_index, self._joker_index + #self.jokers do
       index = ((i - 1) % #self.jokers) + 1
       joker = self.jokers[index]
-      if not self.units[index] and joker.hp_ratio > 0 and not table.contains(self._queued_keys, index) and self:spawn(joker, index, player) then
+      if not alive(joker.unit) and joker.hp_ratio > 0 and not table.contains(self._queued_keys, index) and self:spawn(joker, index, player) then
         self._joker_index = index + 1
         break
       end
@@ -149,17 +150,16 @@ if not Jokermon then
     end)
   end
 
-  function Jokermon:setup_joker(key, unit, joker)
+  function Jokermon:setup_joker(key, unit)
     if not alive(unit) then
       return
     end
+    local joker = self.jokers[key]
     -- correct nickname
     self:set_joker_name(unit, joker.name, true)
-    -- Save to units
-    self.units[key] = unit
     unit:base()._jokermon_key = key
     -- Create panel
-    self:add_panel(key, joker)
+    self:add_panel(key)
   end
 
   function Jokermon:set_joker_name(unit, name, sync)
@@ -176,66 +176,6 @@ if not Jokermon then
     end
     if sync then
       LuaNetworking:SendToPeers("jokermon_name", json.encode({ uid = unit:id(), name = name }))
-    end
-  end
-
-  function Jokermon:get_base_stats(joker)
-    return tweak_data.character[joker.tweak].jokermon_stats or {
-      base_hp = 8,
-      exp_rate = 2
-    }
-  end
-
-  function Jokermon:level_to_exp(joker, level)
-    local exp_rate = self:get_base_stats(joker).exp_rate
-    return 10 * math.ceil(math.pow(math.min(level or joker.level, 100), exp_rate))
-  end
-
-  function Jokermon:exp_to_level(joker, exp)
-    local exp_rate = self:get_base_stats(joker).exp_rate
-    return math.min(math.floor(math.pow((exp or joker.exp) / 10, 1 / exp_rate)), 100)
-  end
-
-  function Jokermon:get_exp_ratio(joker)
-    if joker.level >= 100 then
-      return 1
-    end
-    local needed_current, needed_next = self:level_to_exp(joker), self:level_to_exp(joker, joker.level + 1)
-    return (joker.exp - needed_current) / (needed_next - needed_current)
-  end
-
-  function Jokermon:get_heal_price(joker)
-    local base_price = 10000
-    return math.ceil((joker.hp_ratio <= 0 and base_price * 2 or (1 - joker.hp_ratio) * base_price) * joker.level / 10)
-  end
-
-  function Jokermon:give_exp(key, exp)
-    exp = math.ceil(exp)
-    local joker = self.jokers[key]
-    if joker and joker.level < 100 then
-      local panel = self.panels[key]
-      local old_level = joker.level
-      joker.exp = joker.exp + exp
-      joker.level = self:exp_to_level(joker)
-      if joker.level ~= old_level then
-        local base_hp = self:get_base_stats(joker).base_hp
-        for i = old_level, joker.level - 1 do
-          joker.hp = joker.hp + base_hp * (i / 99) * 0.25
-        end
-        self:set_unit_stats(self.units[key], joker, true)
-        if panel then
-          panel:update_hp(joker.hp, joker.hp_ratio)
-          panel:update_level(joker.level)
-          panel:update_exp(0, true)
-        end
-        self:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
-      end
-      if joker.level >= 100 then
-        joker.exp = self:level_to_exp(joker)
-      end
-      if panel then
-        panel:update_exp(self:get_exp_ratio(joker))
-      end
     end
   end
 
@@ -265,8 +205,8 @@ if not Jokermon then
     [4] = function (v) return v.hp * v.hp_ratio end,
     [5] = function (v) return v.hp_ratio end,
     [6] = function (v) return v.exp end,
-    [7] = function (v) return Jokermon:level_to_exp(v, v.level + 1) - v.exp end,
-    [8] = function (v) return Jokermon:level_to_exp(v, 100) end
+    [7] = function (v) return v.exp_level_next - v.exp end,
+    [8] = function (v) return v:level_to_exp(100) end
   }
   function Jokermon:sort_jokers()
     local c = _sort_comp[self.settings.sorting_order] or _sort_comp.default
@@ -304,16 +244,17 @@ if not Jokermon then
     end
   end
 
-  function Jokermon:add_panel(key, joker)
+  function Jokermon:add_panel(key)
     local hud = self.settings.show_panels and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
     if not hud then
       return
     end
+    local joker = self.jokers[key]
     local panel = JokerPanel:new(hud.panel)
     panel:update_name(joker.name)
     panel:update_hp(joker.hp, joker.hp_ratio, true)
     panel:update_level(joker.level)
-    panel:update_exp(self:get_exp_ratio(joker), true)
+    panel:update_exp(joker:get_exp_ratio(), true)
     self.panels[key] = panel
     self._num_panels = self._num_panels + 1
     self:layout_panels()
@@ -337,7 +278,12 @@ if not Jokermon then
     if full_save then
       file = io.open(self.save_path .. "jokermon.txt", "w+")
       if file then
-        local jokers = self.settings.nuzlocke and table.filter_list(self.jokers, function (j) return j.hp_ratio > 0 end) or self.jokers
+        local jokers = {}
+        for _, v in pairs(self.jokers) do
+          if not self.settings.nuzlocke or v.hp_ratio > 0 then
+            table.insert(jokers, v:get_save_data())
+          end
+        end
         file:write(json.encode(jokers))
         file:close()
       end
@@ -357,6 +303,9 @@ if not Jokermon then
     if file then
       self.jokers = json.decode(file:read("*all"))
       file:close()
+      for k, v in pairs(self.jokers) do
+        self.jokers[k] = Joker:new(nil, v)
+      end
     end
     self:sort_jokers()
   end
@@ -397,12 +346,10 @@ if not Jokermon then
     self._menu_w_right = menu_w - self._menu_w_left - self.menu_padding * 2
   
     local menu = self.menu:Menu({
-      name = "JokermonMainMenu",
       background_color = self.menu_background_color
     })
   
     local title = menu:DivGroup({
-      name = "JokermonTitle",
       text = "Jokermon_menu_main_name",
       size = 26,
       background_color = Color.transparent,
@@ -410,7 +357,6 @@ if not Jokermon then
     })
   
     local base_settings = menu:DivGroup({
-      name = "JokermonBaseSettings",
       text = "Jokermon_menu_base_settings",
       size = self.menu_title_size,
       inherit_values = {
@@ -454,7 +400,6 @@ if not Jokermon then
     })
   
     local panel_settings = menu:DivGroup({
-      name = "JokermonPanelSettings",
       text = "Jokermon_menu_panel_settings",
       size = self.menu_title_size,
       inherit_values = {
@@ -548,7 +493,6 @@ if not Jokermon then
     })
 
     local keybinds = menu:DivGroup({
-      name = "JokermonKeybinds",
       text = "Jokermon_menu_keybinds",
       size = self.menu_title_size,
       inherit_values = {
@@ -578,17 +522,7 @@ if not Jokermon then
       end
     })
   
-    menu:Button({
-      name = "exit",
-      text = "menu_back",
-      size = 24,
-      size_by_text = true,
-      on_callback = function (item) self:set_menu_state(false) end,
-      position = function (item) item:SetPosition(title:Right() - item:W() - self.menu_padding, title:Y()) end
-    })
-  
     self.menu_management = menu:DivGroup({
-      name = "JokermonManagement",
       text = "Jokermon_menu_management",
       size = self.menu_title_size,
       inherit_values = {
@@ -606,21 +540,23 @@ if not Jokermon then
       help = "Jokermon_menu_sorting_desc",
       items = { "Jokermon_menu_sorting_date", "Jokermon_menu_sorting_level", "Jokermon_menu_sorting_max_hp", "Jokermon_menu_sorting_hp", "Jokermon_menu_sorting_rel_hp", "Jokermon_menu_sorting_exp", "Jokermon_menu_sorting_exp_needed", "Jokermon_menu_sorting_total_exp", "Jokermon_menu_sorting_custom" },
       value = self.settings.sorting,
-      free_typing = false
+      free_typing = false,
+      w = self.menu_management:W() * 0.4 - self.menu_padding
     })
     local order = self.menu_management:ComboBox({
       name = "sorting_order",
       text = "Jokermon_menu_sorting_order",
       items = { "Jokermon_menu_sorting_order_asc", "Jokermon_menu_sorting_order_desc" },
       value = self.settings.sorting_order,
-      free_typing = false
-    })
-    self.menu_management:Divider({
-      h = self.menu_padding / 2
+      free_typing = false,
+      w = self.menu_management:W() * 0.4 - self.menu_padding,
+      position = { sorting:Right() + self.menu_padding, sorting:Y() },
     })
     local apply_sorting = self.menu_management:Button({
-      name = "JokermonApplySorting",
       text = "Jokermon_menu_apply_sorting",
+      text_align = "center",
+      w = self.menu_management:W() * 0.2,
+      position = { order:Right() + self.menu_padding, order:Y() },
       on_callback = function (item)
         self:change_menu_setting(sorting)
         self:change_menu_setting(order)
@@ -631,13 +567,21 @@ if not Jokermon then
     })
 
     self.menu_jokermon_list = self.menu_management:Menu({
-      name = "JokermonList",
       inherit_values = {
         size = self.menu_items_size
       },
       align_method = "grid",
       scrollbar = true,
       max_height = menu_h - self.menu_management:Y() - apply_sorting:Bottom() - self.menu_padding * 4
+    })
+
+    menu:Button({
+      text = "menu_back",
+      size = 24,
+      size_by_text = true,
+      highlight_color = Color.transparent,
+      on_callback = function (item) self:set_menu_state(false) end,
+      position = function (item) item:SetRightBottom(self.menu_management:Right(), self.menu_management:Y() - 4) end
     })
   end
 
@@ -648,7 +592,6 @@ if not Jokermon then
     local sub_menu, roll
     for i, joker in ipairs(self.jokers) do
       sub_menu = self.menu_jokermon_list:Holder({
-        name = "Joker" .. i,
         border_visible = true,
         w = self.menu_jokermon_list:W() / 2 - self.menu_padding * 2,
         auto_height = true,
@@ -664,37 +607,31 @@ if not Jokermon then
     end
   end
 
-  local floor = math.floor
-  local pseudo_random = function (seed, ...)
-    math.randomseed(seed)
-    return math.random(...)
+  function Jokermon:get_flavour_text(joker)
+    joker:randomseed()
+    return managers.localization:text("Jokermon_menu_flavour_" .. math.random(1, 36))
   end
+
+  local floor = math.floor
   function Jokermon:fill_joker_panel(menu, i, joker)
     menu:ClearItems()
     menu:Divider({
       h = self.menu_padding / 2
     })
     local title = menu:Divider({
-      name = "JokerType" .. i,
       text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN"), joker.level),
       size = self.menu_items_size + 4
     })
     menu:Button({
-      name = "JokerStats" .. i,
-      text = string.format("%u ", (joker.stats.kills or 0) + (joker.stats.special_kills or 0)),
-      help = managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills or 0, SPECIAL_KILLS = joker.stats.special_kills or 0, DAMAGE = floor((joker.stats.damage or 0) * 10) }),
+      text = string.format("%u ", joker.stats.kills + joker.stats.special_kills),
+      help = managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }),
       help_localized = false,
       size = self.menu_items_size + 4,
       size_by_text = true,
       highlight_color = Color.transparent,
       position = function (item) item:SetRightTop(menu:W(), title:Y()) end
     })
-    menu:Divider({
-      name = "JokerHpExp" .. i,
-      text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = self:level_to_exp(joker, 100), MISSINGEXP = self:level_to_exp(joker, joker.level + 1) - joker.exp })
-    })
     menu:TextBox({
-      name = "JokerNick" .. i,
       text = "Jokermon_menu_nickname",
       localized = true,
       fit_text = true,
@@ -706,21 +643,19 @@ if not Jokermon then
       end
     })
     menu:Divider({
-      h = self.menu_padding / 2
+      text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = joker:level_to_exp(100), MISSINGEXP = math.max(0, joker.exp_level_next - joker.exp) })
     })
     menu:Divider({
-      name = "JokerTrivia" .. i,
       text = managers.localization:text("Jokermon_menu_catch_stats", {
         DATE = os.date("%b %d, %Y", joker.stats.catch_date),
-        LEVEL = joker.stats.catch_level or 1,
+        LEVEL = joker.stats.catch_level,
         HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN",
-        DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty or "normal"])
-      }) .. "\n" .. managers.localization:text("Jokermon_menu_flavour_" .. pseudo_random(joker.stats.catch_date, 1, 30)),
+        DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty])
+      }) .. "\n" .. self:get_flavour_text(joker),
       size = self.menu_items_size - 4,
       foreground = Color.white:with_alpha(0.5)
     })
     menu:NumberBox({
-      name = "JokerOrder" .. i,
       text = "Jokermon_menu_order",
       help = "Jokermon_menu_order_desc",
       localized = true,
@@ -737,11 +672,11 @@ if not Jokermon then
     menu:Divider({
       h = self.menu_padding
     })
-    local heal_price = self:get_heal_price(joker)
-    menu:Button({
-      name = "JokerHeal" .. i,
+    local heal_price = joker:get_heal_price()
+    local heal = menu:Button({
       text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price)) })),
-      text_align = "right",
+      w = menu:W() / 2,
+      text_align = "center",
       enabled = joker.hp_ratio < 1 and managers.money:total() >= heal_price,
       on_callback = function (item)
         managers.money:deduct_from_spending(heal_price)
@@ -751,10 +686,11 @@ if not Jokermon then
       end
     })
     menu:Button({
-      name = "JokerRelease" .. i,
       text = "Jokermon_menu_action_release",
       localized = true,
-      text_align = "right",
+      w = menu:W() / 2,
+      text_align = "center",
+      position = function (item) item:SetRightTop(menu:W(), heal:Y()) end,
       on_callback = function (item)
         self:show_release_confirmation(i)
       end
@@ -839,15 +775,11 @@ if not Jokermon then
     end
 
     local key = Jokermon._queued_keys[1]
+    local joker
     if key then
       -- Use existing Jokermon entry
-      local joker = Jokermon.jokers[key]
-      local uname = Network:is_server() and unit:name():key() or NameProvider.CLIENT_TO_SERVER_MAPPING[unit:name():key()]
-      if joker.uname ~= uname then
-        log("[Jokermon] Warning: Requested " .. NameProvider.UNIT_MAPPIGS[joker.uname] .. " but got " .. NameProvider.UNIT_MAPPIGS[uname])
-      end
-      Jokermon:set_unit_stats(unit, joker, true)
-      Jokermon:setup_joker(key, unit, joker)
+      joker = Jokermon.jokers[key]
+      joker:set_unit(unit)
       table.remove(Jokermon._queued_keys, 1)
 
       Jokermon:display_message("Jokermon_message_go", { NAME = joker.name })
@@ -855,30 +787,16 @@ if not Jokermon then
     else
       -- Create new Jokermon entry
       key = #Jokermon.jokers + 1
-      local mul = (tweak_data:difficulty_to_index(Global.game_settings.difficulty) - 1) / (#tweak_data.difficulties - 1)
-      local joker = {
-        tweak = unit:base()._tweak_table,
-        uname = Network:is_server() and unit:name():key() or NameProvider.CLIENT_TO_SERVER_MAPPING[unit:name():key()],
-        name = HopLib:unit_info_manager():get_info(unit):nickname(),
-        hp = unit:character_damage()._HEALTH_INIT,
-        hp_ratio = 1,
-        level = math.max(1, math.floor(40 * mul + math.random(0, 10 + 10 * mul))),
-        order = 0
-      }
-      joker.exp = Jokermon:level_to_exp(joker, joker.level)
-      joker.stats = {
-        catch_level = joker.level,
-        catch_date = os.time(),
-        catch_heist = managers.job:current_level_id(),
-        catch_difficulty = Global.game_settings.difficulty
-      }
-
-      Jokermon:display_message("Jokermon_message_capture", { NAME = HopLib:unit_info_manager():get_info(unit):name(), LEVEL = joker.level })
+      joker = Joker:new(unit)
       table.insert(Jokermon.jokers, joker)
-      Jokermon:setup_joker(key, unit, joker)
 
       Jokermon._jokers_added = Jokermon._jokers_added + 1
+
+      Jokermon:display_message("Jokermon_message_capture", { NAME = HopLib:unit_info_manager():get_info(unit):name(), LEVEL = joker.level })
     end
+
+    Jokermon:set_unit_stats(unit, joker, true)
+    Jokermon:setup_joker(key, unit)
 
   end)
 
@@ -887,13 +805,13 @@ if not Jokermon then
     local joker = key and Jokermon.jokers[key]
     if joker then
       joker.hp_ratio = unit:character_damage()._health_ratio
+      joker:set_unit(nil)
       if joker.hp_ratio <= 0 then
         Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
       else
         Jokermon:display_message("Jokermon_message_retrieve", { NAME = joker.name })
       end
       Jokermon:remove_panel(key)
-      Jokermon.units[key] = nil
       if Jokermon.settings.spawn_mode ~= 1 then
         Jokermon:send_out_joker(1, true)
       end
@@ -919,18 +837,31 @@ if not Jokermon then
       u_damage._jokermon_assists[attacker_key] = dmg and dmg + damage_info.damage or damage_info.damage
       local attacker_joker = Jokermon.jokers[attacker_key]
       if attacker_joker then
-        attacker_joker.stats.damage = (attacker_joker.stats.damage or 0) + damage_info.damage
+        attacker_joker.stats.damage = attacker_joker.stats.damage + damage_info.damage
         if u_damage:dead() then
           local info = HopLib:unit_info_manager():get_info(unit)
           local cat = info and info:is_special() and "special_kills" or "kills"
-          attacker_joker.stats[cat] = (attacker_joker.stats[cat] or 0) + 1
+          attacker_joker.stats[cat] = attacker_joker.stats[cat] + 1
         end
       end
     end
     if u_damage:dead() and u_damage._jokermon_assists then
       for key, dmg in pairs(u_damage._jokermon_assists) do
         -- Assists get exp based on the damage they did, kills get exp based on enemy hp
-        Jokermon:give_exp(key, key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg)
+        joker = Jokermon.jokers[key]
+        local panel = Jokermon.panels[key]
+        if joker and joker:give_exp(key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg) then
+          Jokermon:set_unit_stats(joker.unit, joker, true)
+          if panel then
+            panel:update_hp(joker.hp, joker.hp_ratio)
+            panel:update_level(joker.level)
+            panel:update_exp(0, true)
+          end
+          Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
+        end
+        if joker and panel then
+          panel:update_exp(joker:get_exp_ratio())
+        end
       end
     end
   end)
