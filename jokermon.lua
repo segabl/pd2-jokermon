@@ -88,8 +88,9 @@ if not Jokermon then
       return
     end
     if Network:is_server() then
-      unit:brain():set_active(false)
-      unit:base():set_slot(unit, 0)
+      --unit:brain():set_active(false)
+      --unit:base():set_slot(unit, 0)
+      World:delete_unit(unit)
     else
       LuaNetworking:SendToPeer(1, "jokermon_retrieve", json.encode({ uid = unit:id() }))
     end
@@ -113,6 +114,7 @@ if not Jokermon then
       end
       local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-50, 50), math.random(-50, 50), 0), player_unit:rotation())
       unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
+      unit:brain():set_active(false)
       -- Queue for conversion (to avoid issues when converting instantly after spawn)
       self:queue_unit_convert(unit, is_local_player, player_unit, joker)
       return true
@@ -130,6 +132,7 @@ if not Jokermon then
           if Keepers then
             Keepers.joker_names[data.player_unit:network():peer():id()] = data.joker.name
           end
+          data.unit:brain():set_active(true)
           managers.groupai:state():convert_hostage_to_criminal(data.unit, (not data.is_local_player) and data.player_unit)
         end
       end
@@ -167,8 +170,8 @@ if not Jokermon then
       return
     end
     HopLib:unit_info_manager():get_info(unit)._nickname = name
-    local peer_id = unit:base().kpr_minion_owner_peer_id
-    if Keepers and peer_id then
+    local peer_id = Keepers and unit:base().kpr_minion_owner_peer_id
+    if peer_id then
       Keepers:DestroyLabel(unit)
       unit:base().kpr_minion_owner_peer_id = peer_id
       Keepers.joker_names[peer_id] = name
