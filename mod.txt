@@ -6,7 +6,12 @@
   "color" : "0.043 0.808 0.6",
   "image" : "mod.png",
   "version" : "1.4",
-  "updates" : [ { "identifier" : "jokermon" } ],
+  "updates" : [
+    {
+      "identifier" : "pd2-jokermon",
+      "host": { "meta": "http://updates.hoppip.at/pd2-jokermon" }
+    }
+  ],
   "dependencies" : [ "hoplib" ],
   "hooks" : [
     { "hook_id" : "lib/managers/group_ai_states/groupaistatebase", "script_path" : "jokermon.lua" },
