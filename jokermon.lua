@@ -88,8 +88,6 @@ if not Jokermon then
       return
     end
     if Network:is_server() then
-      --unit:brain():set_active(false)
-      --unit:base():set_slot(unit, 0)
       World:delete_unit(unit)
     else
       LuaNetworking:SendToPeer(1, "jokermon_retrieve", json.encode({ uid = unit:id() }))
@@ -283,7 +281,7 @@ if not Jokermon then
       if file then
         local jokers = {}
         for _, v in pairs(self.jokers) do
-          if not self.settings.nuzlocke or v.hp_ratio > 0 then
+          if not v.discard then
             table.insert(jokers, v:get_save_data())
           end
         end
@@ -592,21 +590,23 @@ if not Jokermon then
     self.menu_nuzlocke:SetEnabled(not Utils:IsInHeist())
     self.menu_management:SetEnabled(not Utils:IsInHeist())
     self.menu_jokermon_list:ClearItems()
-    local sub_menu, roll
+    local sub_menu
     for i, joker in ipairs(self.jokers) do
-      sub_menu = self.menu_jokermon_list:Holder({
-        border_visible = true,
-        w = self.menu_jokermon_list:W() / 2 - self.menu_padding * 2,
-        auto_height = true,
-        localized = false,
-        background_color = self.menu_grid_item_color,
-        offset = self.menu_padding,
-        inherit_values = {
-          offset = 0,
-          text_offset = { self.menu_padding, self.menu_padding / 4 }
-        }
-      })
-      self:fill_joker_panel(sub_menu, i, joker)
+      if not joker.discard then
+        sub_menu = self.menu_jokermon_list:Holder({
+          border_visible = true,
+          w = self.menu_jokermon_list:W() / 2 - self.menu_padding * 2,
+          auto_height = true,
+          localized = false,
+          background_color = self.menu_grid_item_color,
+          offset = self.menu_padding,
+          inherit_values = {
+            offset = 0,
+            text_offset = { self.menu_padding, self.menu_padding / 4 }
+          }
+        })
+        self:fill_joker_panel(sub_menu, i, joker)
+      end
     end
   end
 
@@ -622,7 +622,7 @@ if not Jokermon then
       h = self.menu_padding / 2
     })
     local title = menu:Divider({
-      text = string.format("%s (Lv.%u)", tostring(HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN"), joker.level),
+      text = string.format("%s (Lv.%u)", HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN", joker.level),
       size = self.menu_items_size + 4
     })
     menu:Button({
@@ -811,6 +811,7 @@ if not Jokermon then
       joker:set_unit(nil)
       if joker.hp_ratio <= 0 then
         Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
+        joker.discard = Jokermon.settings.nuzlocke or nil
       else
         Jokermon:display_message("Jokermon_message_retrieve", { NAME = joker.name })
       end
