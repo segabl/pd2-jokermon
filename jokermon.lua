@@ -587,7 +587,6 @@ if not Jokermon then
       scrollbar = true,
       max_height = menu_h - self.menu_management:Y() - apply_sorting:Bottom() - self.menu_padding * 4
     })
-    self:refresh_joker_list()
 
     menu:Button({
       text = "menu_back",
@@ -599,9 +598,17 @@ if not Jokermon then
     })
   end
 
-  function Jokermon:refresh_joker_list(in_menu)
-    self.menu_nuzlocke:SetEnabled(in_menu or not Utils:IsInHeist())
-    self.menu_management:SetEnabled(in_menu or not Utils:IsInHeist())
+  function Jokermon:refresh_joker_list(check_state)
+    if not self.menu then
+      return
+    end
+    local in_heist = Utils:IsInHeist() or false
+    if check_state and self.menu_in_heist == in_heist then
+      return
+    end
+    self.menu_in_heist = in_heist
+    self.menu_nuzlocke:SetEnabled(not self.menu_in_heist)
+    self.menu_management:SetEnabled(not self.menu_in_heist)
     self.menu_jokermon_list:ClearItems()
     local sub_menu
     for i, joker in ipairs(self.jokers) do
@@ -787,6 +794,7 @@ if not Jokermon then
   function Jokermon:set_menu_state(enabled)
     self:check_create_menu()
     if enabled and not self.menu:Enabled() then
+      Jokermon:refresh_joker_list(true)
       self.menu:Enable()
     elseif not enabled then
       self.menu:Disable()
