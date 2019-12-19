@@ -9,12 +9,13 @@ if not Jokermon then
   Jokermon.settings = {
     nuzlocke = false,
     show_panels = true,
-    panel_x_pos = 0.03,
-    panel_y_pos = 0.2,
-    panel_spacing = 8,
+    panel_w = 200,
+    panel_x_pos = 0.96,
+    panel_y_pos = 0.78,
+    panel_spacing = 12,
     panel_layout = 1,
     panel_x_align = 1,
-    panel_y_align = 1,
+    panel_y_align = 3,
     show_messages = true,
     spawn_mode = 1,
     sorting = 1,
@@ -222,18 +223,22 @@ if not Jokermon then
     end)
   end
 
-  function Jokermon:layout_panels()
+  function Jokermon:layout_panels(width_changed)
     local i = 0
     local x, y
     local x_pos, y_pos, spacing = self.settings.panel_x_pos, self.settings.panel_y_pos, self.settings.panel_spacing
     local x_align, y_align = self.settings.panel_x_align, self.settings.panel_y_align
     local horizontal_layout = self.settings.panel_layout ~= 1 and 1 or 0
     local vertical_layout = self.settings.panel_layout == 1 and 1 or 0
+    local panel_w = self.settings.panel_w
     for _, panel in pairs(self.panels) do
+      if width_changed then
+        panel:set_width(panel_w)
+      end
       if x_align == 2 and horizontal_layout == 1 then
-        x = (panel._parent_panel:w() - panel._panel:w() * self._num_panels - spacing * (self._num_panels - 1)) * x_pos + (panel._panel:w() + spacing) * i
+        x = (panel._parent_panel:w() - panel_w * self._num_panels - spacing * (self._num_panels - 1)) * x_pos + (panel_w + spacing) * i
       else
-        x = (panel._parent_panel:w() - panel._panel:w()) * x_pos + (panel._panel:w() + spacing) * i * horizontal_layout * (x_align == 3 and -1 or 1)
+        x = (panel._parent_panel:w() - panel_w) * x_pos + (panel_w + spacing) * i * horizontal_layout * (x_align == 3 and -1 or 1)
       end
       if y_align == 2 and vertical_layout == 1 then
         y = (panel._parent_panel:h() - panel._panel:h() * self._num_panels - spacing * (self._num_panels - 1)) * y_pos + (panel._panel:h() + spacing) * i
@@ -251,7 +256,7 @@ if not Jokermon then
       return
     end
     local joker = self.jokers[key]
-    local panel = JokerPanel:new(hud.panel)
+    local panel = JokerPanel:new(hud.panel, self.settings.panel_w)
     panel:update_name(joker.name)
     panel:update_hp(joker.hp, joker.hp_ratio, true)
     panel:update_level(joker.level)
@@ -415,6 +420,19 @@ if not Jokermon then
       help = "Jokermon_menu_show_panels_desc",
       on_callback = function (item) self:change_menu_setting(item) end,
       value = self.settings.show_panels
+    })
+    panel_settings:Slider({
+      name = "panel_w",
+      text = "Jokermon_menu_panel_w",
+      value = self.settings.panel_w,
+      floats = 0,
+      min = 160,
+      max = 480,
+      step = 8,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:layout_panels(true)
+      end
     })
     panel_settings:ComboBox({
       name = "panel_layout",

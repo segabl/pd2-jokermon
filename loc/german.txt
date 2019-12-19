@@ -13,6 +13,7 @@
   "Jokermon_menu_panel_settings" : "Panel Einstellungen",
   "Jokermon_menu_show_panels" : "Panels anzeigen",
   "Jokermon_menu_show_panels_desc" : "Zeigt Joker Panels mit Level, HP und EXP auf dem Bildschirm wärend eines Raubzuges an",
+  "Jokermon_menu_panel_w" : "Panel Breite",
   "Jokermon_menu_panel_layout" : "Panel Layout",
   "Jokermon_menu_panel_layout_vertical" : "Vertikal",
   "Jokermon_menu_panel_layout_horizontal" : "Horizontal",
