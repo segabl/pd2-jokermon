@@ -667,7 +667,7 @@ if not Jokermon then
     })
 
     local title = menu:TextBox({
-      text = HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN",
+      text = HopLib:name_provider():name_by_unit(nil, joker.uname) or "Unknown Unit",
       help = "Jokermon_menu_nickname",
       fit_text = true,
       text = false,
@@ -684,10 +684,11 @@ if not Jokermon then
       position = function (item) item:SetLeftBottom(title:X(), xp:Bottom()) end
     })
     menu:Divider({
-      text = managers.localization:text("Jokermon_menu_catch_stats", {
-        DATE = os.date("%b %d, %Y", joker.stats.catch_date),
+      text = managers.localization:text(joker.ot and "Jokermon_menu_catch_stats_ot" or "Jokermon_menu_catch_stats", {
+        DATE = os.date("%B %d, %Y", joker.stats.catch_date),
+        OT = joker.ot_name ~= "" and joker.ot_name or "Unknown Heister",
         LEVEL = joker.stats.catch_level,
-        HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN",
+        HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "Unknown Heist",
         DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty])
       }) .. "\n" .. managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }) .. "\n" .. self:get_flavour_text(joker),
       size = self.menu_items_size - 4,
@@ -712,7 +713,9 @@ if not Jokermon then
     })
     local heal_price = joker:get_heal_price()
     local heal = menu:Button({
-      text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price)) }),
+      text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", {
+        COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price))
+      }),
       w = menu:W() / 2,
       text_align = "center",
       enabled = joker.hp_ratio < 1 and managers.money:total() >= heal_price,
