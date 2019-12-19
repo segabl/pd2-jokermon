@@ -321,7 +321,7 @@ if not Jokermon then
     self.menu_items_size = 18
     self.menu_padding = 16
     self.menu_background_color = Color.black:with_alpha(0.75)
-    self.menu_accent_color = BeardLib.Options:GetValue("MenuColor"):with_alpha(0.75)--Color("0bce99"):with_alpha(0.75)
+    self.menu_accent_color = BeardLib.Options:GetValue("MenuColor"):with_alpha(0.75)
     self.menu_highlight_color = self.menu_accent_color:with_alpha(0.075)
     self.menu_grid_item_color = Color.black:with_alpha(0.5)
   
@@ -396,9 +396,6 @@ if not Jokermon then
       on_callback = function (item) self:change_menu_setting(item) end,
       value = self.settings.nuzlocke
     })
-    base_settings:Divider({
-      h = self.menu_padding * 2
-    })
   
     local panel_settings = menu:DivGroup({
       text = "Jokermon_menu_panel_settings",
@@ -410,7 +407,7 @@ if not Jokermon then
       border_bottom = true,
       border_position_below_title = true,
       w = self._menu_w_left,
-      position = { self.menu_padding, base_settings:Bottom() }
+      position = { self.menu_padding, base_settings:Bottom() + self.menu_padding }
     })
     panel_settings:Toggle({
       name = "show_panels",
@@ -489,9 +486,6 @@ if not Jokermon then
         self:layout_panels()
       end
     })
-    panel_settings:Divider({
-      h = self.menu_padding * 2
-    })
 
     local keybinds = menu:DivGroup({
       text = "Jokermon_menu_keybinds",
@@ -502,7 +496,7 @@ if not Jokermon then
       border_bottom = true,
       border_position_below_title = true,
       w = self._menu_w_left,
-      position = { self.menu_padding, panel_settings:Bottom() }
+      position = { self.menu_padding, panel_settings:Bottom() + self.menu_padding }
     })
     keybinds:KeyBind({
       name = "menu",
@@ -575,6 +569,7 @@ if not Jokermon then
       scrollbar = true,
       max_height = menu_h - self.menu_management:Y() - apply_sorting:Bottom() - self.menu_padding * 4
     })
+    self:refresh_joker_list()
 
     menu:Button({
       text = "menu_back",
@@ -586,9 +581,9 @@ if not Jokermon then
     })
   end
 
-  function Jokermon:refresh_joker_list()
-    self.menu_nuzlocke:SetEnabled(not Utils:IsInHeist())
-    self.menu_management:SetEnabled(not Utils:IsInHeist())
+  function Jokermon:refresh_joker_list(in_menu)
+    self.menu_nuzlocke:SetEnabled(in_menu or not Utils:IsInHeist())
+    self.menu_management:SetEnabled(in_menu or not Utils:IsInHeist())
     self.menu_jokermon_list:ClearItems()
     local sub_menu
     for i, joker in ipairs(self.jokers) do
@@ -597,12 +592,14 @@ if not Jokermon then
           border_visible = true,
           w = self.menu_jokermon_list:W() / 2 - self.menu_padding * 2,
           auto_height = true,
-          localized = false,
           background_color = self.menu_grid_item_color,
-          offset = self.menu_padding,
+          offset = self.menu_padding / 2,
+        }):Holder({
+          auto_height = true,
+          localized = false,
           inherit_values = {
             offset = 0,
-            text_offset = { self.menu_padding, self.menu_padding / 4 }
+            text_offset = { 0, self.menu_padding / 4 }
           }
         })
         self:fill_joker_panel(sub_menu, i, joker)
@@ -618,35 +615,48 @@ if not Jokermon then
   local floor = math.floor
   function Jokermon:fill_joker_panel(menu, i, joker)
     menu:ClearItems()
-    menu:Divider({
-      h = self.menu_padding / 2
-    })
-    local title = menu:Divider({
-      text = string.format("%s (Lv.%u)", HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN", joker.level),
-      size = self.menu_items_size + 4
-    })
-    menu:Button({
-      text = string.format("%u ", joker.stats.kills + joker.stats.special_kills),
-      help = managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }),
+    local xp = menu:Button({
+      text = tostring(joker.level),
+      help = managers.localization:text("Jokermon_menu_exp", { EXP = joker.exp, TOTALEXP = joker:level_to_exp(100), MISSINGEXP = math.max(0, joker.exp_level_next - joker.exp) }),
       help_localized = false,
-      size = self.menu_items_size + 4,
-      size_by_text = true,
+      text_align = "center",
       highlight_color = Color.transparent,
-      position = function (item) item:SetRightTop(menu:W(), title:Y()) end
+      w = 56,
+      h = 56
     })
-    menu:TextBox({
-      text = "Jokermon_menu_nickname",
-      localized = true,
+    xp.panel:bitmap({
+      texture = "guis/textures/pd2/level_ring_small",
+      alpha = 0.4,
+      w = 56,
+      h = 56,
+      color = Color.black
+    })
+    xp.panel:bitmap({
+      texture = "guis/textures/pd2/level_ring_small",
+      render_template = "VertexColorTexturedRadial",
+      blend_mode = "add",
+      layer = 1,
+      w = 56,
+      h = 56,
+      color = Color((joker.exp - joker:level_to_exp(joker.level)) / (joker.exp_level_next - joker:level_to_exp(joker.level)), 1, 1)
+    })
+
+    local title = menu:TextBox({
+      text = HopLib:name_provider():name_by_unit(nil, joker.uname) or "UNKNOWN",
+      help = "Jokermon_menu_nickname",
       fit_text = true,
+      text = false,
       value = joker.name,
       focus_mode = true,
       on_callback = function (item)
         joker.name = item:Value()
         self:save(true)
-      end
+      end,
+      position = function (item) item:SetXY(xp:Right() + self.menu_padding / 2, xp:Y()) end
     })
-    menu:Divider({
-      text = managers.localization:text("Jokermon_menu_hp_exp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100), EXP = joker.exp, TOTALEXP = joker:level_to_exp(100), MISSINGEXP = math.max(0, joker.exp_level_next - joker.exp) })
+    local hp = menu:Divider({
+      text = managers.localization:text("Jokermon_menu_hp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100) }),
+      position = function (item) item:SetLeftBottom(title:X(), xp:Bottom()) end
     })
     menu:Divider({
       text = managers.localization:text("Jokermon_menu_catch_stats", {
@@ -654,7 +664,7 @@ if not Jokermon then
         LEVEL = joker.stats.catch_level,
         HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "UNKNOWN",
         DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty])
-      }) .. "\n" .. self:get_flavour_text(joker),
+      }) .. "\n" .. managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }) .. "\n" .. self:get_flavour_text(joker),
       size = self.menu_items_size - 4,
       foreground = Color.white:with_alpha(0.5)
     })
@@ -673,11 +683,11 @@ if not Jokermon then
       end
     })
     menu:Divider({
-      h = self.menu_padding
+      h = self.menu_padding / 2
     })
     local heal_price = joker:get_heal_price()
     local heal = menu:Button({
-      text = string.format(managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price)) })),
+      text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price)) }),
       w = menu:W() / 2,
       text_align = "center",
       enabled = joker.hp_ratio < 1 and managers.money:total() >= heal_price,
@@ -697,9 +707,6 @@ if not Jokermon then
       on_callback = function (item)
         self:show_release_confirmation(i)
       end
-    })
-    menu:Divider({
-      h = self.menu_padding / 2
     })
   end
 
@@ -762,7 +769,6 @@ if not Jokermon then
   function Jokermon:set_menu_state(enabled)
     self:check_create_menu()
     if enabled and not self.menu:Enabled() then
-      self:refresh_joker_list()
       self.menu:Enable()
     elseif not enabled then
       self.menu:Disable()
