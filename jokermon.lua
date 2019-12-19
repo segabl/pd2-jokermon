@@ -11,7 +11,7 @@ if not Jokermon then
     show_panels = true,
     panel_w = 200,
     panel_x_pos = 0.96,
-    panel_y_pos = 0.78,
+    panel_y_pos = 0.65,
     panel_spacing = 12,
     panel_layout = 1,
     panel_x_align = 1,

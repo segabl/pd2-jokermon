@@ -22,6 +22,7 @@ function Joker:init(unit, data)
     special_kills = data and data.stats and data.stats.special_kills or 0,
     damage = data and data.stats and data.stats.damage or 0
   }
+  self.ot = data and data.ot
   self:calculate_stats()
   self:set_unit(unit)
 end
@@ -97,6 +98,7 @@ function Joker:get_save_data()
     name = self.name,
     hp_ratio = self.hp_ratio,
     exp = self.exp,
-    stats = self.stats
+    stats = self.stats,
+    ot = self.ot
   }
 end
