@@ -15,17 +15,12 @@ function JokerPanel:init(panel, w)
   self._padding = 8
 
   self._parent_panel = panel
-  self._panel = self._parent_panel:panel({
+
+  self._panel = HUDBGBox_create(self._parent_panel, {
     w = w,
     h = 52,
     layer = 50
-  })
-
-  self._panel_bg = self._panel:rect({
-    name = "bg",
-    color = Color.black:with_alpha(0.2),
-    layer = -100
-  })
+  }, {})
 
   self._name_text = self._panel:text({
     name = "name",
@@ -43,7 +38,11 @@ function JokerPanel:init(panel, w)
     font = tweak_data.menu.pd2_medium_font,
     font_size = 16,
     color = Color.white,
-    y = self._padding - 1
+    x = self._padding,
+    y = self._padding - 1,
+    w = self._panel:w() - self._padding * 2,
+    align = "right",
+    halign = "right"
   })
 
   self._hp_bar_bg = self._panel:rect({
@@ -53,6 +52,7 @@ function JokerPanel:init(panel, w)
     h = 12,
     x = self._padding,
     y = 24,
+    halign = "grow",
     layer = -10
   })
   self._hp_bar = self._panel:rect({
@@ -85,6 +85,7 @@ function JokerPanel:init(panel, w)
     h = 4,
     x = self._padding,
     y = 40,
+    halign = "grow",
     layer = -10
   })
   self._exp_bar = self._panel:rect({
@@ -98,32 +99,13 @@ function JokerPanel:init(panel, w)
   })
   self._exp_ratio = 0
 
-  self._border = BoxGuiObject:new(self._panel, {
-    layer = 50,
-    left = 1,
-    right = 1,
-    top = 1,
-    bottom = 1
-  })
 end
 
 function JokerPanel:set_width(w)
   self._panel:set_w(w)
-  self._panel_bg:set_w(w)
-  self._lvl_text:set_right(self._panel:w() - self._padding)
-  local max_w = self._panel:w() - self._padding * 2
+  local max_w = w - self._padding * 2
   self._hp_bar:set_w((self._hp_bar:w() / self._hp_bar_bg:w()) * max_w)
-  self._hp_bar_bg:set_w(max_w)
-  self._hp_text:set_w(max_w)
   self._exp_bar:set_w((self._exp_bar:w() / self._exp_bar_bg:w()) * max_w)
-  self._exp_bar_bg:set_w(max_w)
-  self._border:create_sides(self._panel, {
-    layer = 50,
-    left = 1,
-    right = 1,
-    top = 1,
-    bottom = 1
-  })
 end
 
 function JokerPanel:set_position(x, y)
@@ -136,9 +118,6 @@ end
 
 function JokerPanel:update_level(level)
   self._lvl_text:set_text(tostring(level))
-  local _, _, w, h = self._lvl_text:text_rect()
-  self._lvl_text:set_size(w, h)
-  self._lvl_text:set_right(self._panel:w() - self._padding)
 end
 
 function JokerPanel:update_hp(hp, hp_ratio, instant)
