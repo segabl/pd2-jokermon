@@ -1,6 +1,6 @@
 if not Jokermon then
   _G.Jokermon = {}
-  
+
   dofile(ModPath .. "req/Joker.lua")
   dofile(ModPath .. "req/JokerPanel.lua")
 
@@ -140,7 +140,7 @@ if not Jokermon then
   end
 
   function Jokermon:queue_unit_convert(unit, is_local_player, player_unit, joker)
-    table.insert(self._queued_converts, { 
+    table.insert(self._queued_converts, {
       is_local_player = is_local_player,
       player_unit = player_unit,
       unit = unit,
@@ -295,7 +295,7 @@ if not Jokermon then
       end
     end
   end
-  
+
   function Jokermon:load()
     local file = io.open(self.save_path .. "jokermon_settings.txt", "r")
     if file then
@@ -321,7 +321,7 @@ if not Jokermon then
     if self.menu then
       return
     end
-  
+
     self.menu_title_size = 22
     self.menu_items_size = 18
     self.menu_padding = 16
@@ -329,7 +329,7 @@ if not Jokermon then
     self.menu_accent_color = BeardLib.Options:GetValue("MenuColor"):with_alpha(0.75)
     self.menu_highlight_color = self.menu_accent_color:with_alpha(0.075)
     self.menu_grid_item_color = Color.black:with_alpha(0.5)
-  
+
     self.menu = MenuUI:new({
       name = "JokermonMenu",
       layer = 1000,
@@ -344,24 +344,24 @@ if not Jokermon then
       use_default_close_key = true,
       disable_player_controls = true
     })
-    
+
     local menu_w = self.menu._panel:w()
     local menu_h = self.menu._panel:h()
-  
+
     self._menu_w_left = menu_w / 3 - self.menu_padding
     self._menu_w_right = menu_w - self._menu_w_left - self.menu_padding * 2
-  
+
     local menu = self.menu:Menu({
       background_color = self.menu_background_color
     })
-  
+
     local title = menu:DivGroup({
       text = "Jokermon_menu_main_name",
       size = 26,
       background_color = Color.transparent,
       position = { self.menu_padding, self.menu_padding }
     })
-  
+
     local base_settings = menu:DivGroup({
       text = "Jokermon_menu_base_settings",
       size = self.menu_title_size,
@@ -401,7 +401,7 @@ if not Jokermon then
       on_callback = function (item) self:change_menu_setting(item) end,
       value = self.settings.nuzlocke
     })
-  
+
     local panel_settings = menu:DivGroup({
       text = "Jokermon_menu_panel_settings",
       size = self.menu_title_size,
@@ -534,7 +534,7 @@ if not Jokermon then
         self:change_key_binding(item)
       end
     })
-  
+
     self.menu_management = menu:DivGroup({
       text = "Jokermon_menu_management",
       size = self.menu_title_size,
@@ -670,7 +670,6 @@ if not Jokermon then
       text = HopLib:name_provider():name_by_unit(nil, joker.uname) or "Unknown Unit",
       help = "Jokermon_menu_nickname",
       fit_text = true,
-      text = false,
       value = joker.name,
       focus_mode = true,
       on_callback = function (item)
@@ -803,11 +802,11 @@ if not Jokermon then
       self.menu:Disable()
     end
   end
-  
+
   Hooks:Add("HopLibOnMinionAdded", "HopLibOnMinionAddedJokermon", function(unit, player_unit)
     local uid = unit:id()
     Jokermon._unit_id_mappings[uid] = unit
-    
+
     if player_unit ~= managers.player:local_player() then
       return
     end
@@ -938,7 +937,7 @@ if not Jokermon then
   end)
 
   Hooks:Add("MenuManagerPostInitialize", "MenuManagerPostInitializeJokermon", function(menu_manager, nodes)
-  
+
     Jokermon:load()
 
     MenuCallbackHandler.Jokermon_open_menu = function ()
@@ -964,9 +963,9 @@ if not Jokermon then
     BLT.Keybinds:register_keybind(mod, { id = "jokermon_spawn_joker", allow_game = true, show_in_menu = false, callback = function()
       Jokermon:send_or_retrieve_joker()
     end }):SetKey(Jokermon.settings.keys.spawn_joker)
-  
+
   end)
-  
+
 end
 
 if RequiredScript then
