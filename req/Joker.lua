@@ -16,7 +16,7 @@ function Joker:init(unit, data)
   self.stats = {
     catch_level = data and data.stats and data.stats.catch_level or lvl,
     catch_date = data and data.stats and data.stats.catch_date or os.time(),
-    catch_heist = data and data.stats and data.stats.catch_heist or managers.job:current_level_id(),
+    catch_heist = data and data.stats and data.stats.catch_heist or managers.job and managers.job:current_level_id(),
     catch_difficulty = data and data.stats and data.stats.catch_difficulty or Global.game_settings.difficulty,
     kills = data and data.stats and data.stats.kills or 0,
     special_kills = data and data.stats and data.stats.special_kills or 0,
