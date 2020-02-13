@@ -8,6 +8,8 @@
   "Jokermon_menu_spawn_mode_automatic" : "Automatic",
   "Jokermon_menu_nuzlocke" : "Nuzlocke mode",
   "Jokermon_menu_nuzlocke_desc" : "Can only capture Jokers once per heist and Joker deaths are final",
+  "Jokermon_menu_temporary" : "Temporary mode",
+  "Jokermon_menu_temporary_desc" : "Newly captured Jokers will be discarded after the heist",
   "Jokermon_menu_show_messages" : "Show messages",
   "Jokermon_menu_show_messages_desc" : "Show messages for certain events in chat (only client-side)",
   "Jokermon_menu_panel_settings" : "Panel Settings",

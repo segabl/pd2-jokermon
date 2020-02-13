@@ -8,6 +8,8 @@
   "Jokermon_menu_spawn_mode_automatic" : "Automatisch",
   "Jokermon_menu_nuzlocke" : "Nuzlocke Modus",
   "Jokermon_menu_nuzlocke_desc" : "Erlaubt es in einem Heist nur einmal Joker zu fangen und Joker Tode sind endgültig",
+  "Jokermon_menu_temporary" : "Temporärer Modus",
+  "Jokermon_menu_temporary_desc" : "Neu gefangene Joker werden nach dem Heist entfernt",
   "Jokermon_menu_show_messages" : "Nachrichten anzeigen",
   "Jokermon_menu_show_messages_desc" : "Zeigt Nachrichten für bestimmte Events an (nur client-seitig)",
   "Jokermon_menu_panel_settings" : "Panel Einstellungen",

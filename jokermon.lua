@@ -8,6 +8,7 @@ if not Jokermon then
   Jokermon.save_path = SavePath
   Jokermon.settings = {
     nuzlocke = false,
+    temporary = false,
     show_panels = true,
     panel_w = 200,
     panel_x_pos = 0.96,
@@ -36,6 +37,7 @@ if not Jokermon then
   Jokermon._joker_slot = World:make_slot_mask(16)
   Jokermon._jokermon_key_press_t = 0
   Jokermon._max_jokers = 30
+  Jokermon._jokermon_peers = {}
 
   function Jokermon:display_message(message, macros, force)
     if force or Jokermon.settings.show_messages then
@@ -400,6 +402,13 @@ if not Jokermon then
       help = "Jokermon_menu_nuzlocke_desc",
       on_callback = function (item) self:change_menu_setting(item) end,
       value = self.settings.nuzlocke
+    })
+    base_settings:Toggle({
+      name = "temporary",
+      text = "Jokermon_menu_temporary",
+      help = "Jokermon_menu_temporary_desc",
+      on_callback = function (item) self:change_menu_setting(item) end,
+      value = self.settings.temporary
     })
 
     local panel_settings = menu:DivGroup({
@@ -825,6 +834,7 @@ if not Jokermon then
       -- Create new Jokermon entry
       key = #Jokermon.jokers + 1
       joker = Joker:new(unit)
+      joker.discard = Jokermon.settings.temporary or nil
       table.insert(Jokermon.jokers, joker)
 
       Jokermon._jokers_added = Jokermon._jokers_added + 1
@@ -845,7 +855,7 @@ if not Jokermon then
       joker:set_unit(nil)
       if joker.hp_ratio <= 0 then
         Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
-        joker.discard = Jokermon.settings.nuzlocke or nil
+        joker.discard = Jokermon.settings.nuzlocke or joker.discard
       else
         Jokermon:display_message("Jokermon_message_retrieve", { NAME = joker.name })
       end
