@@ -700,6 +700,21 @@ if not Jokermon then
       text = managers.localization:text("Jokermon_menu_hp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100) }),
       position = function (item) item:SetLeftBottom(title:X(), xp:Bottom()) end
     })
+    menu:NumberBox({
+      text = "Jokermon_menu_order",
+      help = "Jokermon_menu_order_desc",
+      localized = true,
+      fit_text = true,
+      value = joker.order,
+      floats = 0,
+      focus_mode = true,
+      control_slice = 0.7,
+      position = function (item) item:SetLeftBottom(title:X() + title._textbox.panel:x(), xp:Bottom()) end,
+      on_callback = function (item)
+        joker.order = item:Value()
+        self:save(true)
+      end
+    })
     menu:Divider({
       text = managers.localization:text(joker.ot and "Jokermon_menu_catch_stats_ot" or "Jokermon_menu_catch_stats", {
         DATE = os.date("%B %d, %Y at %H:%M", joker.stats.catch_date),
@@ -710,23 +725,6 @@ if not Jokermon then
       }) .. "\n" .. managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }) .. "\n" .. self:get_flavour_text(joker),
       size = self.menu_items_size - 4,
       foreground = Color.white:with_alpha(0.5)
-    })
-    menu:NumberBox({
-      text = "Jokermon_menu_order",
-      help = "Jokermon_menu_order_desc",
-      localized = true,
-      fit_text = true,
-      value = joker.order,
-      floats = 0,
-      size = self.menu_items_size - 4,
-      focus_mode = true,
-      on_callback = function (item)
-        joker.order = item:Value()
-        self:save(true)
-      end
-    })
-    menu:Divider({
-      h = self.menu_padding / 2
     })
     local heal_price = joker:get_heal_price()
     local heal = menu:Button({
