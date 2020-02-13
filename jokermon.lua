@@ -134,6 +134,7 @@ if not Jokermon then
             Keepers.joker_names[data.player_unit:network():peer():id()] = data.joker.name
           end
           data.unit:brain():set_active(true)
+          data.unit:inventory():destroy_all_items()
           managers.groupai:state():convert_hostage_to_criminal(data.unit, (not data.is_local_player) and data.player_unit)
         end
       end
