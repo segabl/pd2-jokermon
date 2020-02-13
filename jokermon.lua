@@ -557,6 +557,13 @@ if not Jokermon then
       w = self._menu_w_right,
       position = { base_settings:Right() + self.menu_padding, title:Bottom() }
     })
+    self.menu_joker_number_text = self.menu_management:Panel():text({
+      text = "0 / 0",
+      font = "fonts/font_large_mf",
+      align = "right",
+      y = self.menu_padding / 2,
+      font_size = self.menu_title_size
+    })
     local sorting = self.menu_management:ComboBox({
       name = "sorting",
       text = "Jokermon_menu_sorting",
@@ -620,6 +627,7 @@ if not Jokermon then
     self.menu_nuzlocke:SetEnabled(not self.menu_in_heist)
     self.menu_management:SetEnabled(not self.menu_in_heist)
     self.menu_jokermon_list:ClearItems()
+    self.menu_joker_number_text:set_text(string.format("%u / %u", #self.jokers, self._max_jokers))
     local sub_menu
     for i, joker in ipairs(self.jokers) do
       if not joker.discard then
@@ -694,7 +702,7 @@ if not Jokermon then
     })
     menu:Divider({
       text = managers.localization:text(joker.ot and "Jokermon_menu_catch_stats_ot" or "Jokermon_menu_catch_stats", {
-        DATE = os.date("%B %d, %Y", joker.stats.catch_date),
+        DATE = os.date("%B %d, %Y at %H:%M", joker.stats.catch_date),
         OT = joker.ot_name ~= "" and joker.ot_name or "Unknown Heister",
         LEVEL = joker.stats.catch_level,
         HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "Unknown Heist",
