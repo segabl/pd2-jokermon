@@ -310,10 +310,15 @@ if not Jokermon then
     end
     file = io.open(self.save_path .. "jokermon.txt", "r")
     if file then
-      self.jokers = json.decode(file:read("*all"))
+      self.jokers = {}
+      local jokers = json.decode(file:read("*all"))
       file:close()
-      for k, v in pairs(self.jokers) do
-        self.jokers[k] = Joker:new(nil, v)
+      for _, data in pairs(jokers) do
+        if data.uname and data.tweak then
+          table.insert(self.jokers, Joker:new(nil, data))
+        else
+          log(string.format("[Jokermon] Error: Joker \"%s\" is missing data and has been removed to prevent crashes!", data.name or "Unknown"))
+        end
       end
     end
     self:sort_jokers()

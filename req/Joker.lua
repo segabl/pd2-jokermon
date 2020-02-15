@@ -6,7 +6,7 @@ function Joker:init(unit, data)
   self.name = data and data.name or HopLib:unit_info_manager():get_info(unit):nickname()
   self.hp_ratio = data and data.hp_ratio or 1
   self.order = data and data.order or 0
-  self.base_stats = tweak_data.character[self.tweak].jokermon_stats or {
+  self.base_stats = tweak_data.character[self.tweak] and tweak_data.character[self.tweak].jokermon_stats or {
     hp = 8,
     exp_rate = 2
   }
