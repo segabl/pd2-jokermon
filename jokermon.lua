@@ -928,16 +928,17 @@ if not Jokermon then
 
   Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
     if id == "jokermon_spawn" then
-      Jokermon:spawn(json.decode(data), nil, LuaNetworking:GetPeers()[sender]:unit())
+      data = json.decode(data)
+      return data and Jokermon:spawn(data, nil, LuaNetworking:GetPeers()[sender]:unit())
     elseif id == "jokermon_stats" then
       data = json.decode(data)
-      Jokermon:set_unit_stats(Jokermon._unit_id_mappings[data.uid], data)
+      return data and Jokermon:set_unit_stats(Jokermon._unit_id_mappings[data.uid], data)
     elseif id == "jokermon_name" then
       data = json.decode(data)
-      Jokermon:set_joker_name(Jokermon._unit_id_mappings[data.uid], data.name)
+      return data and Jokermon:set_joker_name(Jokermon._unit_id_mappings[data.uid], data.name)
     elseif id == "jokermon_retrieve" then
       data = json.decode(data)
-      Jokermon:retrieve_joker(Jokermon._unit_id_mappings[data.uid])
+      return data and Jokermon:retrieve_joker(Jokermon._unit_id_mappings[data.uid])
     end
   end)
 
