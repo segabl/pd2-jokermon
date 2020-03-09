@@ -90,6 +90,7 @@ if not Jokermon then
     if not alive(unit) then
       return
     end
+    unit:base()._jokermon_retrieving = true
     if Network:is_server() then
       World:delete_unit(unit)
     else
@@ -861,14 +862,10 @@ if not Jokermon then
 
   Hooks:Add("HopLibOnMinionRemoved", "HopLibOnMinionRemovedJokermon", function(unit)
     local key = unit:base()._jokermon_key
-    local joker = key and Jokermon.jokers[key]
+    local joker = Jokermon.jokers[key]
     if joker then
-      joker.hp_ratio = unit:character_damage()._health_ratio
       joker:set_unit(nil)
-      if joker.hp_ratio <= 0 then
-        Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
-        joker.discard = Jokermon.settings.nuzlocke or joker.discard
-      else
+      if unit:base()._jokermon_retrieving then
         Jokermon:display_message("Jokermon_message_retrieve", { NAME = joker.name })
       end
       Jokermon:remove_panel(key)
@@ -882,12 +879,17 @@ if not Jokermon then
   Hooks:Add("HopLibOnUnitDamaged", "HopLibOnUnitDamagedJokermon", function(unit, damage_info)
     local u_damage = unit:character_damage()
     local key = unit:base()._jokermon_key
-    local joker = key and Jokermon.jokers[key]
+    local joker = Jokermon.jokers[key]
     if joker then
       joker.hp_ratio = u_damage._health_ratio
       local panel = Jokermon.panels[key]
       if panel then
         panel:update_hp(joker.hp, joker.hp_ratio)
+      end
+      if joker.hp_ratio <= 0 then
+        unit:base()._jokermon_retrieving = false
+        Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
+        joker.discard = Jokermon.settings.nuzlocke or joker.discard
       end
     end
     local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
