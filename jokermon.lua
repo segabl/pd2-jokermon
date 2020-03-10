@@ -639,7 +639,7 @@ if not Jokermon then
       if not joker.discard then
         sub_menu = self.menu_jokermon_list:Holder({
           border_visible = true,
-          w = self.menu_jokermon_list:W() / 2 - self.menu_padding * 2,
+          w = self.menu_jokermon_list:W() / 2 - self.menu_padding,
           auto_height = true,
           background_color = self.menu_grid_item_color,
           offset = self.menu_padding / 2,
