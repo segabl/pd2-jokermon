@@ -100,6 +100,7 @@ function Joker:get_save_data()
     hp_ratio = self.hp_ratio,
     exp = self.exp,
     stats = self.stats,
-    ot = self.ot
+    ot = self.ot,
+    order = self.order
   }
 end
