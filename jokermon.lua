@@ -67,6 +67,9 @@ if not Jokermon then
   end
 
   function Jokermon:send_out_joker(num, skip_check)
+    if not Utils:IsInHeist() then
+      return
+    end
     local player = managers.player:local_player()
     if not player or not skip_check and (not managers.player:has_category_upgrade("player", "convert_enemies") or managers.player:chk_minion_limit_reached()) then
       return
