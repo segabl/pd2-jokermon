@@ -893,6 +893,7 @@ if not Jokermon then
         unit:base()._jokermon_retrieving = false
         Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
         joker.discard = Jokermon.settings.nuzlocke or joker.discard
+        Jokermon:remove_panel(key)
       end
     end
     local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
