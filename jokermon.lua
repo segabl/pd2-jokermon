@@ -431,7 +431,7 @@ if not Jokermon then
       border_bottom = true,
       border_position_below_title = true,
       w = self._menu_w_left,
-      position = { self.menu_padding, base_settings:Bottom() + self.menu_padding }
+      position = { self.menu_padding, base_settings:Bottom() + self.menu_padding / 2 }
     })
     panel_settings:Toggle({
       name = "show_panels",
@@ -533,7 +533,7 @@ if not Jokermon then
       border_bottom = true,
       border_position_below_title = true,
       w = self._menu_w_left,
-      position = { self.menu_padding, panel_settings:Bottom() + self.menu_padding }
+      position = { self.menu_padding, panel_settings:Bottom() + self.menu_padding / 2 }
     })
     keybinds:KeyBind({
       name = "menu",
@@ -551,6 +551,34 @@ if not Jokermon then
       value = self.settings.keys.spawn_joker,
       on_callback = function (item)
         self:change_key_binding(item)
+      end
+    })
+
+    local actions = menu:DivGroup({
+      text = "Jokermon_menu_actions",
+      size = self.menu_title_size,
+      inherit_values = {
+        size = self.menu_items_size
+      },
+      border_bottom = true,
+      border_position_below_title = true,
+      w = self._menu_w_left,
+      position = { self.menu_padding, keybinds:Bottom() + self.menu_padding / 2 }
+    })
+    self.menu_heal_all_button = actions:Button({
+      text = managers.localization:text("Jokermon_menu_action_revive_all", { COST = "$0" }),
+      localized = false,
+      enabled = false,
+      on_callback = function (item)
+        self:heal_all_jokers(false)
+      end
+    })
+    self.menu_revive_all_button = actions:Button({
+      text = managers.localization:text("Jokermon_menu_action_heal_all", { COST = "$0" }),
+      localized = false,
+      enabled = false,
+      on_callback = function (item)
+        self:heal_all_jokers(true)
       end
     })
 
@@ -624,6 +652,10 @@ if not Jokermon then
     })
   end
 
+  function Jokermon:make_money_string(price)
+    return managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(price))
+  end
+
   function Jokermon:refresh_joker_list(check_state)
     if not self.menu then
       return
@@ -637,6 +669,8 @@ if not Jokermon then
     self.menu_management:SetEnabled(not self.menu_in_heist)
     self.menu_jokermon_list:ClearItems()
     self.menu_joker_number_text:set_text(string.format("%u / %u", #self.jokers, self._max_jokers))
+    self.heal_all_price = 0
+    self.revive_all_price = 0
     local sub_menu
     for i, joker in ipairs(self.jokers) do
       if not joker.discard then
@@ -657,6 +691,10 @@ if not Jokermon then
         self:fill_joker_panel(sub_menu, i, joker)
       end
     end
+    self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)
+    self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(self.heal_all_price) }))
+    self.menu_revive_all_button:SetEnabled(not self.menu_in_heist and self.revive_all_price > 0 and managers.money:total() >= self.revive_all_price)
+    self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(self.revive_all_price) }))
   end
 
   function Jokermon:get_flavour_text(joker)
@@ -737,9 +775,7 @@ if not Jokermon then
     })
     local heal_price = joker:get_heal_price()
     local heal = menu:Button({
-      text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", {
-        COST = managers.money._cash_sign .. managers.money:add_decimal_marks_to_string(tostring(heal_price))
-      }),
+      text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = self:make_money_string(heal_price) }),
       w = menu:W() / 2,
       text_align = "center",
       enabled = joker.hp_ratio < 1 and managers.money:total() >= heal_price,
@@ -760,6 +796,9 @@ if not Jokermon then
         self:show_release_confirmation(i)
       end
     })
+
+    self.heal_all_price = self.heal_all_price + (joker.hp_ratio > 0 and heal_price or 0)
+    self.revive_all_price = self.revive_all_price + (joker.hp_ratio == 0 and heal_price or 0)
   end
 
   function Jokermon:show_release_confirmation(i)
@@ -783,7 +822,6 @@ if not Jokermon then
       },
       create_items = function (menu)
         menu:Button({
-          name = "JokermonYes",
           text = "dialog_yes",
           text_align = "right",
           localized = true,
@@ -795,7 +833,6 @@ if not Jokermon then
           end
         })
         menu:Button({
-          name = "JokermonNo",
           text = "dialog_no",
           text_align = "right",
           localized = true,
@@ -805,6 +842,17 @@ if not Jokermon then
         })
       end
     })
+  end
+
+  function Jokermon:heal_all_jokers(revive)
+    table.for_each_value(self.jokers, function (joker)
+      if revive and joker.hp_ratio == 0 or not revive and joker.hp_ratio > 0 then
+        joker.hp_ratio = 1
+      end
+    end)
+    managers.money:deduct_from_spending(revive and self.revive_all_price or self.heal_all_price)
+    self:save(true)
+    self:refresh_joker_list()
   end
 
   function Jokermon:change_menu_setting(item)
