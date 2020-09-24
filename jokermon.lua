@@ -664,37 +664,43 @@ if not Jokermon then
     if check_state and self.menu_in_heist == in_heist then
       return
     end
+
     self.menu_in_heist = in_heist
     self.menu_nuzlocke:SetEnabled(not self.menu_in_heist)
     self.menu_management:SetEnabled(not self.menu_in_heist)
     self.menu_jokermon_list:ClearItems()
     self.menu_joker_number_text:set_text(string.format("%u / %u", #self.jokers, self._max_jokers))
+    self.menu_heal_all_button:SetEnabled(false)
+    self.menu_revive_all_button:SetEnabled(false)
     self.heal_all_price = 0
     self.revive_all_price = 0
-    local sub_menu
-    for i, joker in ipairs(self.jokers) do
-      if not joker.discard then
-        sub_menu = self.menu_jokermon_list:Holder({
-          border_visible = true,
-          w = self.menu_jokermon_list:W() / 2 - self.menu_padding,
-          auto_height = true,
-          background_color = self.menu_grid_item_color,
-          offset = self.menu_padding / 2,
-        }):Holder({
-          auto_height = true,
-          localized = false,
-          inherit_values = {
-            offset = 0,
-            text_offset = { 0, self.menu_padding / 4 }
-          }
-        })
-        self:fill_joker_panel(sub_menu, i, joker)
+    self.joker_list_coroutine = coroutine.create(function ()
+      local sub_menu
+      for i, joker in ipairs(self.jokers) do
+        if not joker.discard then
+          sub_menu = self.menu_jokermon_list:Holder({
+            border_visible = true,
+            w = self.menu_jokermon_list:W() / 2 - self.menu_padding,
+            auto_height = true,
+            background_color = self.menu_grid_item_color,
+            offset = self.menu_padding / 2,
+          }):Holder({
+            auto_height = true,
+            localized = false,
+            inherit_values = {
+              offset = 0,
+              text_offset = { 0, self.menu_padding / 4 }
+            }
+          })
+          self:fill_joker_panel(sub_menu, i, joker)
+          coroutine.yield()
+        end
       end
-    end
-    self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)
-    self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(self.heal_all_price) }))
-    self.menu_revive_all_button:SetEnabled(not self.menu_in_heist and self.revive_all_price > 0 and managers.money:total() >= self.revive_all_price)
-    self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(self.revive_all_price) }))
+      self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)
+      self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(self.heal_all_price) }))
+      self.menu_revive_all_button:SetEnabled(not self.menu_in_heist and self.revive_all_price > 0 and managers.money:total() >= self.revive_all_price)
+      self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(self.revive_all_price) }))
+    end)
   end
 
   function Jokermon:get_flavour_text(joker)
@@ -1041,6 +1047,12 @@ if not Jokermon then
       Jokermon:send_or_retrieve_joker()
     end }):SetKey(Jokermon.settings.keys.spawn_joker)
 
+  end)
+
+  Hooks:Add("SetupPreUpdate", "SetupPreUpdateJokermon", function ()
+    if Jokermon.joker_list_coroutine and not coroutine.resume(Jokermon.joker_list_coroutine) then
+      Jokermon.joker_list_coroutine = nil
+    end
   end)
 
 end
