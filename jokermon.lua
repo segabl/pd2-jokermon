@@ -566,7 +566,7 @@ if not Jokermon then
       position = { self.menu_padding, keybinds:Bottom() + self.menu_padding / 2 }
     })
     self.menu_heal_all_button = actions:Button({
-      text = managers.localization:text("Jokermon_menu_action_revive_all", { COST = "$0" }),
+      text = managers.localization:text("Jokermon_menu_action_heal_all", { COST = "$0" }),
       localized = false,
       enabled = false,
       on_callback = function (item)
@@ -574,7 +574,7 @@ if not Jokermon then
       end
     })
     self.menu_revive_all_button = actions:Button({
-      text = managers.localization:text("Jokermon_menu_action_heal_all", { COST = "$0" }),
+      text = managers.localization:text("Jokermon_menu_action_revive_all", { COST = "$0" }),
       localized = false,
       enabled = false,
       on_callback = function (item)
@@ -851,6 +851,11 @@ if not Jokermon then
   end
 
   function Jokermon:heal_all_jokers(revive)
+    if revive then
+      self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = 0 }))
+    else
+      self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = 0 }))
+    end
     table.for_each_value(self.jokers, function (joker)
       if revive and joker.hp_ratio == 0 or not revive and joker.hp_ratio > 0 then
         joker.hp_ratio = 1
