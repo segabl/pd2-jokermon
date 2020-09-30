@@ -566,7 +566,7 @@ if not Jokermon then
       position = { self.menu_padding, keybinds:Bottom() + self.menu_padding / 2 }
     })
     self.menu_heal_all_button = actions:Button({
-      text = managers.localization:text("Jokermon_menu_action_heal_all", { COST = "$0" }),
+      text = managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(0) }),
       localized = false,
       enabled = false,
       on_callback = function (item)
@@ -574,7 +574,7 @@ if not Jokermon then
       end
     })
     self.menu_revive_all_button = actions:Button({
-      text = managers.localization:text("Jokermon_menu_action_revive_all", { COST = "$0" }),
+      text = managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(0) }),
       localized = false,
       enabled = false,
       on_callback = function (item)
@@ -852,9 +852,9 @@ if not Jokermon then
 
   function Jokermon:heal_all_jokers(revive)
     if revive then
-      self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = 0 }))
+      self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(0) }))
     else
-      self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = 0 }))
+      self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(0) }))
     end
     table.for_each_value(self.jokers, function (joker)
       if revive and joker.hp_ratio == 0 or not revive and joker.hp_ratio > 0 then
@@ -1008,20 +1008,9 @@ if not Jokermon then
   end)
 
   Hooks:Add("LocalizationManagerPostInit", "LocalizationManagerPostInitJokermon", function(loc)
-    local language = "english"
-    local system_language = HopLib:get_game_language()
-    local blt_language = BLT.Localization:get_language().language
 
-    local loc_path = Jokermon.mod_path .. "loc/"
-    if io.file_is_readable(loc_path .. system_language .. ".txt") then
-      language = system_language
-    end
-    if io.file_is_readable(loc_path .. blt_language .. ".txt") then
-      language = blt_language
-    end
+    HopLib:load_localization(Jokermon.mod_path .. "loc/", loc)
 
-    loc:load_localization_file(loc_path .. language .. ".txt")
-    loc:load_localization_file(loc_path .. "english.txt", false)
   end)
 
   Hooks:Add("MenuManagerPostInitialize", "MenuManagerPostInitializeJokermon", function(menu_manager, nodes)
