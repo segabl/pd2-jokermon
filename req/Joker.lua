@@ -2,7 +2,7 @@ Joker = Joker or class()
 
 function Joker:init(unit, data)
   self.tweak = data and data.tweak or unit:base()._tweak_table
-  self.uname = data and data.uname or Network:is_server() and unit:name():key() or NameProvider.CLIENT_TO_SERVER_MAPPING[unit:name():key()]
+  self.uname = data and data.uname or Network:is_server() and unit:name():key() or HopLib:name_provider().CLIENT_TO_SERVER_MAPPING[unit:name():key()]
   self.name = data and data.name or HopLib:unit_info_manager():get_info(unit):nickname()
   self.hp_ratio = data and data.hp_ratio or 1
   self.order = data and data.order or 0
@@ -68,9 +68,9 @@ end
 function Joker:set_unit(unit)
   if unit then
     local tweak = unit:base()._tweak_table
-    local uname = Network:is_server() and unit:name():key() or NameProvider.CLIENT_TO_SERVER_MAPPING[unit:name():key()]
+    local uname = Network:is_server() and unit:name():key() or HopLib:name_provider().CLIENT_TO_SERVER_MAPPING[unit:name():key()]
     if tweak ~= self.tweak or uname ~= self.uname then
-      log(string.format("[Jokermon] Warning: Unit mismatch! Expected %s (%s), got %s (%s)!", tostring(NameProvider.UNIT_MAPPIGS[self.uname]), self.tweak, tostring(NameProvider.UNIT_MAPPIGS[uname]), tweak))
+      log(string.format("[Jokermon] Warning: Unit mismatch! Expected %s (%s), got %s (%s)!", tostring(HopLib:name_provider().UNIT_MAPPIGS[self.uname]), self.tweak, tostring(HopLib:name_provider().UNIT_MAPPIGS[uname]), tweak))
     end
   end
   self.unit = unit
