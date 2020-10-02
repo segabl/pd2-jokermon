@@ -608,7 +608,13 @@ if not Jokermon then
       items = { "Jokermon_menu_sorting_date", "Jokermon_menu_sorting_level", "Jokermon_menu_sorting_max_hp", "Jokermon_menu_sorting_hp", "Jokermon_menu_sorting_rel_hp", "Jokermon_menu_sorting_exp", "Jokermon_menu_sorting_exp_needed", "Jokermon_menu_sorting_total_exp", "Jokermon_menu_sorting_custom" },
       value = self.settings.sorting,
       free_typing = false,
-      w = self.menu_management:W() * 0.4 - self.menu_padding
+      w = self.menu_management:W() * 0.5 - self.menu_padding,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:sort_jokers()
+        self:refresh_joker_list()
+        self:save(true)
+      end
     })
     local order = self.menu_management:ComboBox({
       name = "sorting_order",
@@ -616,17 +622,10 @@ if not Jokermon then
       items = { "Jokermon_menu_sorting_order_asc", "Jokermon_menu_sorting_order_desc" },
       value = self.settings.sorting_order,
       free_typing = false,
-      w = self.menu_management:W() * 0.4 - self.menu_padding,
+      w = self.menu_management:W() * 0.5 - self.menu_padding,
       position = { sorting:Right() + self.menu_padding, sorting:Y() },
-    })
-    local apply_sorting = self.menu_management:Button({
-      text = "Jokermon_menu_apply_sorting",
-      text_align = "center",
-      w = self.menu_management:W() * 0.2,
-      position = { order:Right() + self.menu_padding, order:Y() },
       on_callback = function (item)
-        self:change_menu_setting(sorting)
-        self:change_menu_setting(order)
+        self:change_menu_setting(item)
         self:sort_jokers()
         self:refresh_joker_list()
         self:save(true)
@@ -639,7 +638,7 @@ if not Jokermon then
       },
       align_method = "grid",
       scrollbar = true,
-      max_height = menu_h - self.menu_management:Y() - apply_sorting:Bottom() - self.menu_padding * 4
+      max_height = menu_h - self.menu_management:Y() - order:Bottom() - self.menu_padding * 4
     })
 
     menu:Button({

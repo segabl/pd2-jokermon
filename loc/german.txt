@@ -50,7 +50,6 @@
   "Jokermon_menu_sorting_order" : "Reihenfolge",
   "Jokermon_menu_sorting_order_desc" : "Absteigend",
   "Jokermon_menu_sorting_order_asc" : "Aufsteigend",
-  "Jokermon_menu_apply_sorting" : "Jetzt sortieren",
   "Jokermon_menu_stats" : "$KILLS normale Kills, $SPECIAL_KILLS Special Kills, $DAMAGE Schaden ausgeteilt",
   "Jokermon_menu_hp" : "$HP / $MAXHP HP ($HPRATIO%)",
   "Jokermon_menu_exp" : "$EXP / $TOTALEXP EXP ($MISSINGEXP für nächstes Level)",
