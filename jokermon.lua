@@ -214,7 +214,7 @@ if not Jokermon then
     [4] = function (v) return v.hp * v.hp_ratio end,
     [5] = function (v) return v.hp_ratio end,
     [6] = function (v) return v.exp end,
-    [7] = function (v) return v.exp_level_next - v.exp end,
+    [7] = function (v) return v.level < Joker.MAX_LEVEL and v.exp_level_next - v.exp or math.huge end,
     [8] = function (v) return v:level_to_exp(100) end
   }
   function Jokermon:sort_jokers()
@@ -712,7 +712,7 @@ if not Jokermon then
     menu:ClearItems()
     local xp = menu:Button({
       text = tostring(joker.level),
-      help = managers.localization:text("Jokermon_menu_exp", { EXP = joker.exp, TOTALEXP = joker:level_to_exp(100), MISSINGEXP = math.max(0, joker.exp_level_next - joker.exp) }),
+      help = managers.localization:text("Jokermon_menu_exp", { EXP = joker.exp, TOTALEXP = joker:level_to_exp(Joker.MAX_LEVEL), MISSINGEXP = math.max(0, joker.exp_level_next - joker.exp) }),
       help_localized = false,
       text_align = "center",
       highlight_color = Color.transparent,
@@ -733,7 +733,7 @@ if not Jokermon then
       layer = 1,
       w = 56,
       h = 56,
-      color = Color((joker.exp - joker:level_to_exp(joker.level)) / (joker.exp_level_next - joker:level_to_exp(joker.level)), 1, 1)
+      color = Color(joker:get_exp_ratio(), 1, 1)
     })
 
     local title = menu:TextBox({

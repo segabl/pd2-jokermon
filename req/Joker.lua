@@ -1,5 +1,7 @@
 Joker = Joker or class()
 
+Joker.MAX_LEVEL = 100
+
 function Joker:init(unit, data)
   self.tweak = data and data.tweak or unit:base()._tweak_table
   self.uname = data and data.uname or Network:is_server() and unit:name():key() or HopLib:name_provider().CLIENT_TO_SERVER_MAPPING[unit:name():key()]
@@ -39,6 +41,7 @@ function Joker:calculate_stats()
   self.level = self:exp_to_level(self.exp)
   self.exp_level = self:level_to_exp()
   self.exp_level_next = self:level_to_exp(self.level + 1)
+  self.exp = math.min(self.exp, self.exp_level_next)
 
   self:randomseed()
   local raised_levels = self.level - self.stats.catch_level
@@ -46,15 +49,15 @@ function Joker:calculate_stats()
 end
 
 function Joker:exp_to_level(exp)
-  return math.min(math.floor(math.pow((exp or self.exp) / 10, 1 / self.base_stats.exp_rate)), 100)
+  return math.min(math.floor(math.pow((exp or self.exp) / 10, 1 / self.base_stats.exp_rate)), Joker.MAX_LEVEL)
 end
 
 function Joker:level_to_exp(level)
-  return 10 * math.ceil(math.pow(math.min(level or self.level, 100), self.base_stats.exp_rate))
+  return 10 * math.ceil(math.pow(math.min(level or self.level, Joker.MAX_LEVEL), self.base_stats.exp_rate))
 end
 
 function Joker:get_exp_ratio()
-  if self.level >= 100 then
+  if self.level >= Joker.MAX_LEVEL then
     return 1
   end
   return (self.exp - self.exp_level) / (self.exp_level_next - self.exp_level)
@@ -78,7 +81,7 @@ end
 
 function Joker:give_exp(exp)
   exp = math.ceil(exp * (self.ot and 1.5 or 1))
-  if self.level < 100 then
+  if self.level < Joker.MAX_LEVEL then
     local old_level = self.level
     self.exp = self.exp + exp
     self.level = self:exp_to_level()
@@ -86,7 +89,7 @@ function Joker:give_exp(exp)
       self:calculate_stats()
       return true
     end
-    if self.level >= 100 then
+    if self.level >= Joker.MAX_LEVEL then
       self.exp = self:level_to_exp(self)
     end
   end
