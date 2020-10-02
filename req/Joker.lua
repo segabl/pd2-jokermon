@@ -24,8 +24,7 @@ function Joker:init(unit, data)
     special_kills = data and data.stats and data.stats.special_kills or 0,
     damage = data and data.stats and data.stats.damage or 0
   }
-  self.ot = data and data.ot ~= Steam:userid() and data.ot
-  self.ot_name = self.ot and Steam:username(self.ot)
+  self.ot = data and data.ot or Steam:userid()
   self:calculate_stats()
   self:set_unit(unit)
 end
@@ -80,7 +79,7 @@ function Joker:set_unit(unit)
 end
 
 function Joker:give_exp(exp)
-  exp = math.ceil(exp * (self.ot and 1.5 or 1))
+  exp = math.ceil(exp * (self.ot ~= Steam:userid() and 1.5 or 1))
   if self.level < Joker.MAX_LEVEL then
     local old_level = self.level
     self.exp = self.exp + exp
@@ -93,6 +92,11 @@ function Joker:give_exp(exp)
       self.exp = self:level_to_exp(self)
     end
   end
+end
+
+function Joker:original_owner_name()
+  local n = Steam:username(self.ot)
+  return n == "" and "Unknown" or n
 end
 
 function Joker:get_save_data()

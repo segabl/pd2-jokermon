@@ -768,9 +768,9 @@ if not Jokermon then
       end
     })
     menu:Divider({
-      text = managers.localization:text(joker.ot and "Jokermon_menu_catch_stats_ot" or "Jokermon_menu_catch_stats", {
+      text = managers.localization:text("Jokermon_menu_catch_stats", {
         DATE = os.date("%B %d, %Y at %H:%M", joker.stats.catch_date),
-        OT = joker.ot_name ~= "" and joker.ot_name or "Unknown Heister",
+        OT = joker:original_owner_name(),
         LEVEL = joker.stats.catch_level,
         HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "Unknown Heist",
         DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty])
