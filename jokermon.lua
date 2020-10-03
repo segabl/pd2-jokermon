@@ -692,7 +692,7 @@ if not Jokermon then
               text_offset = { 0, self.menu_padding / 4 }
             }
           })
-          self:fill_joker_panel(sub_menu, i, joker)
+          self:fill_joker_panel(sub_menu, i, joker, true)
           if os.clock() - t > 1 / 30 then
             coroutine.yield()
             t = os.clock()
@@ -700,9 +700,7 @@ if not Jokermon then
         end
       end
       self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)
-      self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(self.heal_all_price) }))
       self.menu_revive_all_button:SetEnabled(not self.menu_in_heist and self.revive_all_price > 0 and managers.money:total() >= self.revive_all_price)
-      self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(self.revive_all_price) }))
     end)
   end
 
@@ -712,7 +710,7 @@ if not Jokermon then
   end
 
   local floor = math.floor
-  function Jokermon:fill_joker_panel(menu, i, joker)
+  function Jokermon:fill_joker_panel(menu, i, joker, created)
     menu:ClearItems()
     local xp = menu:Button({
       text = tostring(joker.level),
@@ -790,6 +788,8 @@ if not Jokermon then
       enabled = joker.hp_ratio < 1 and managers.money:total() >= heal_price,
       on_callback = function (item)
         managers.money:deduct_from_spending(heal_price)
+        self.heal_all_price = self.heal_all_price - (joker.hp_ratio > 0 and heal_price or 0)
+        self.revive_all_price = self.revive_all_price - (joker.hp_ratio == 0 and heal_price or 0)
         joker.hp_ratio = 1
         self:save(true)
         self:fill_joker_panel(menu, i, joker)
@@ -806,8 +806,15 @@ if not Jokermon then
       end
     })
 
-    self.heal_all_price = self.heal_all_price + (joker.hp_ratio > 0 and heal_price or 0)
-    self.revive_all_price = self.revive_all_price + (joker.hp_ratio == 0 and heal_price or 0)
+    if created then
+      self.heal_all_price = self.heal_all_price + (joker.hp_ratio > 0 and heal_price or 0)
+      self.revive_all_price = self.revive_all_price + (joker.hp_ratio == 0 and heal_price or 0)
+    else
+      self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)
+      self.menu_revive_all_button:SetEnabled(not self.menu_in_heist and self.revive_all_price > 0 and managers.money:total() >= self.revive_all_price)
+    end
+    self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(self.heal_all_price) }))
+    self.menu_revive_all_button:SetText(managers.localization:text("Jokermon_menu_action_revive_all", { COST = self:make_money_string(self.revive_all_price) }))
   end
 
   function Jokermon:show_release_confirmation(i)
