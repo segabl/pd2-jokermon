@@ -26,6 +26,7 @@ if not Jokermon then
       spawn_joker = "j"
     }
   }
+  Jokermon.MAX_JOKERS = 50
   Jokermon.jokers = {}
   Jokermon.panels = {}
   Jokermon._num_panels = 0
@@ -36,7 +37,6 @@ if not Jokermon then
   Jokermon._joker_index = 1
   Jokermon._joker_slot = World:make_slot_mask(16)
   Jokermon._jokermon_key_press_t = 0
-  Jokermon._max_jokers = 30
   Jokermon._jokermon_peers = {}
 
   function Jokermon:display_message(message, macros, force)
@@ -108,7 +108,7 @@ if not Jokermon then
     local is_local_player = player_unit == managers.player:local_player()
     local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
     local ids = xml and xml.id
-    if ids and type(ids) == "userdata" and PackageManager:has(Idstring("unit"), ids) then
+    if type(ids) == "userdata" and PackageManager:has(Idstring("unit"), ids) then
       if is_local_player then
         table.insert(self._queued_keys, index)
       end
@@ -668,13 +668,14 @@ if not Jokermon then
     self.menu_nuzlocke:SetEnabled(not self.menu_in_heist)
     self.menu_management:SetEnabled(not self.menu_in_heist)
     self.menu_jokermon_list:ClearItems()
-    self.menu_joker_number_text:set_text(string.format("%u / %u", #self.jokers, self._max_jokers))
+    self.menu_joker_number_text:set_text(string.format("%u / %u", #self.jokers, Jokermon.MAX_JOKERS))
     self.menu_heal_all_button:SetEnabled(false)
     self.menu_revive_all_button:SetEnabled(false)
     self.heal_all_price = 0
     self.revive_all_price = 0
     self.joker_list_coroutine = coroutine.create(function ()
       local sub_menu
+      local t = os.clock()
       for i, joker in ipairs(self.jokers) do
         if not joker.discard then
           sub_menu = self.menu_jokermon_list:Holder({
@@ -692,7 +693,10 @@ if not Jokermon then
             }
           })
           self:fill_joker_panel(sub_menu, i, joker)
-          coroutine.yield()
+          if os.clock() - t > 1 / 30 then
+            coroutine.yield()
+            t = os.clock()
+          end
         end
       end
       self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)

@@ -15,7 +15,7 @@ function IntimitateInteractionExt:_interact_blocked(player, ...)
       Jokermon:display_message("Jokermon_message_nuzlocke", nil, true)
       return true
     end
-    if #Jokermon.jokers >= Jokermon._max_jokers and not Jokermon.settings.temporary then
+    if #Jokermon.jokers >= Jokermon.MAX_JOKERS and not Jokermon.settings.temporary then
       Jokermon:display_message("Jokermon_message_box_full", nil, true)
       return true
     end
