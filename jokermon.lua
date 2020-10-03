@@ -941,7 +941,7 @@ if not Jokermon then
     local u_damage = unit:character_damage()
     local key = unit:base()._jokermon_key
     local joker = Jokermon.jokers[key]
-    if joker then
+    if joker and not u_damage._jokermon_dead then
       joker.hp_ratio = u_damage._health_ratio
       local panel = Jokermon.panels[key]
       if panel then
@@ -952,6 +952,7 @@ if not Jokermon then
         Jokermon:display_message(Jokermon.settings.nuzlocke and "Jokermon_message_die" or "Jokermon_message_faint", { NAME = joker.name })
         joker.discard = Jokermon.settings.nuzlocke or joker.discard
         Jokermon:remove_panel(key)
+        u_damage._jokermon_dead = true
       end
     end
     local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
