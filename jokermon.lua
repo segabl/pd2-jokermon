@@ -57,7 +57,7 @@ if not Jokermon then
     if viewport:get_current_camera() then
       local from = viewport:get_current_camera_position()
       mvector3.set(to_vec, viewport:get_current_camera_rotation():y())
-      mvector3.multiply(to_vec, 1000)
+      mvector3.multiply(to_vec, 2000)
       mvector3.add(to_vec, from)
       local col = World:raycast("ray", from, to_vec, "slot_mask", Jokermon._joker_slot)
       if col and col.unit and col.unit:base()._jokermon_key then
