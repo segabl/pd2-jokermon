@@ -9,6 +9,7 @@ if not Jokermon then
   Jokermon.settings = {
     nuzlocke = false,
     temporary = false,
+    vanilla = false,
     show_panels = true,
     panel_w = 200,
     panel_x_pos = 0.96,
@@ -347,7 +348,7 @@ if not Jokermon then
       layer = 1000,
       background_blur = true,
       animate_toggle = true,
-      text_offset = self.menu_padding / 4,
+      text_offset = 3,
       show_help_time = 0.5,
       border_size = 1,
       accent_color = self.menu_accent_color,
@@ -410,8 +411,21 @@ if not Jokermon then
       name = "nuzlocke",
       text = "Jokermon_menu_nuzlocke",
       help = "Jokermon_menu_nuzlocke_desc",
-      on_callback = function (item) self:change_menu_setting(item) end,
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self.menu_vanilla:SetEnabled(not item:Value() and not self.menu_in_heist)
+      end,
       value = self.settings.nuzlocke
+    })
+    self.menu_vanilla = base_settings:Toggle({
+      name = "vanilla",
+      text = "Jokermon_menu_vanilla",
+      help = "Jokermon_menu_vanilla_desc",
+      on_callback = function (item)
+        self:change_menu_setting(item)
+        self:refresh_joker_list()
+      end,
+      value = self.settings.vanilla
     })
     base_settings:Toggle({
       name = "temporary",
@@ -666,6 +680,7 @@ if not Jokermon then
 
     self.menu_in_heist = in_heist
     self.menu_nuzlocke:SetEnabled(not self.menu_in_heist)
+    self.menu_vanilla:SetEnabled(not self.menu_in_heist and not self.settings.nuzlocke)
     self.menu_management:SetEnabled(not self.menu_in_heist)
     self.menu_jokermon_list:ClearItems()
     self.menu_joker_number_text:set_text(string.format("%u / %u", #self.jokers, Jokermon.MAX_JOKERS))
@@ -712,6 +727,7 @@ if not Jokermon then
   local floor = math.floor
   function Jokermon:fill_joker_panel(menu, i, joker, created)
     menu:ClearItems()
+    joker:calculate_stats()
     local xp = menu:Button({
       text = tostring(joker.level),
       help = managers.localization:text("Jokermon_menu_exp", { EXP = joker.exp, TOTALEXP = joker:level_to_exp(Joker.MAX_LEVEL), MISSINGEXP = math.max(0, joker.exp_level_next - joker.exp) }),
@@ -739,7 +755,7 @@ if not Jokermon then
     })
 
     local title = menu:TextBox({
-      text = HopLib:name_provider():name_by_unit(nil, joker.uname) or "Unknown Unit",
+      text = HopLib:name_provider():name_by_unit(nil, joker.uname) or "Unknown",
       help = "Jokermon_menu_nickname",
       fit_text = true,
       value = joker.name,
@@ -774,7 +790,7 @@ if not Jokermon then
         DATE = os.date("%B %d, %Y at %H:%M", joker.stats.catch_date),
         OT = joker:original_owner_name(),
         LEVEL = joker.stats.catch_level,
-        HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "Unknown Heist",
+        HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "Unknown",
         DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty])
       }) .. "\n" .. managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }) .. "\n" .. self:get_flavour_text(joker),
       size = self.menu_items_size - 4,

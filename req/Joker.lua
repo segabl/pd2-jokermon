@@ -42,9 +42,13 @@ function Joker:calculate_stats()
   self.exp_level_next = self:level_to_exp(self.level + 1)
   self.exp = math.min(self.exp, self.exp_level_next)
 
-  self:randomseed()
-  local raised_levels = self.level - self.stats.catch_level
-  self.hp = math.random() * self.base_stats.hp + self.base_stats.hp * (self.stats.catch_level * 0.1 + raised_levels * 0.15)
+  if Jokermon.settings.vanilla then
+    self.hp = tweak_data.character[self.tweak] and tweak_data.character[self.tweak].HEALTH_INIT or 8
+  else
+    self:randomseed()
+    local raised_levels = self.level - self.stats.catch_level
+    self.hp = math.random() * self.base_stats.hp + self.base_stats.hp * (self.stats.catch_level * 0.1 + raised_levels * 0.15)
+  end
 end
 
 function Joker:exp_to_level(exp)
