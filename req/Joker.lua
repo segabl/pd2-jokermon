@@ -6,7 +6,7 @@ function Joker:init(unit, data)
   self.tweak = data and data.tweak or unit:base()._tweak_table
   self.uname = data and data.uname or Network:is_server() and unit:name():key() or HopLib:name_provider().CLIENT_TO_SERVER_MAPPING[unit:name():key()]
   self.name = data and data.name or HopLib:unit_info_manager():get_info(unit):nickname()
-  self.hp_ratio = data and data.hp_ratio or 1
+  self.hp_ratio = data and math.min(math.max(data.hp_ratio, 0), 1) or 1
   self.order = data and data.order or 0
   self.base_stats = tweak_data.character[self.tweak] and tweak_data.character[self.tweak].jokermon_stats or {
     hp = 8,

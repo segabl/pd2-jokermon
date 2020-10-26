@@ -766,7 +766,7 @@ if not Jokermon then
       end,
       position = function (item) item:SetXY(xp:Right() + self.menu_padding / 2, xp:Y()) end
     })
-    local hp = menu:Divider({
+    menu:Divider({
       text = managers.localization:text("Jokermon_menu_hp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100) }),
       position = function (item) item:SetLeftBottom(title:X(), xp:Bottom()) end
     })
@@ -805,7 +805,7 @@ if not Jokermon then
       on_callback = function (item)
         managers.money:deduct_from_spending(heal_price)
         self.heal_all_price = self.heal_all_price - (joker.hp_ratio > 0 and heal_price or 0)
-        self.revive_all_price = self.revive_all_price - (joker.hp_ratio == 0 and heal_price or 0)
+        self.revive_all_price = self.revive_all_price - (joker.hp_ratio <= 0 and heal_price or 0)
         joker.hp_ratio = 1
         self:save(true)
         self:fill_joker_panel(menu, i, joker)
@@ -824,7 +824,7 @@ if not Jokermon then
 
     if created then
       self.heal_all_price = self.heal_all_price + (joker.hp_ratio > 0 and heal_price or 0)
-      self.revive_all_price = self.revive_all_price + (joker.hp_ratio == 0 and heal_price or 0)
+      self.revive_all_price = self.revive_all_price + (joker.hp_ratio <= 0 and heal_price or 0)
     else
       self.menu_heal_all_button:SetEnabled(not self.menu_in_heist and self.heal_all_price > 0 and managers.money:total() >= self.heal_all_price)
       self.menu_revive_all_button:SetEnabled(not self.menu_in_heist and self.revive_all_price > 0 and managers.money:total() >= self.revive_all_price)
@@ -883,7 +883,7 @@ if not Jokermon then
       self.menu_heal_all_button:SetText(managers.localization:text("Jokermon_menu_action_heal_all", { COST = self:make_money_string(0) }))
     end
     table.for_each_value(self.jokers, function (joker)
-      if revive and joker.hp_ratio == 0 or not revive and joker.hp_ratio > 0 then
+      if revive and joker.hp_ratio <= 0 or not revive and joker.hp_ratio > 0 then
         joker.hp_ratio = 1
       end
     end)
@@ -969,7 +969,7 @@ if not Jokermon then
     local key = unit:base()._jokermon_key
     local joker = Jokermon.jokers[key]
     if joker and not u_damage._jokermon_dead then
-      joker.hp_ratio = u_damage._health_ratio
+      joker.hp_ratio = math.min(math.max(u_damage._health_ratio, 0), 1)
       local panel = Jokermon.panels[key]
       if panel then
         panel:update_hp(joker.hp, joker.hp_ratio)
