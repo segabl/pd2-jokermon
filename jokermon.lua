@@ -269,6 +269,7 @@ if not Jokermon then
     panel:update_hp(joker.hp, joker.hp_ratio, true)
     panel:update_level(joker.level)
     panel:update_exp(joker:get_exp_ratio(), true)
+    panel:update_kills(0)
     self.panels[key] = panel
     self._num_panels = self._num_panels + 1
     self:layout_panels()
@@ -990,31 +991,44 @@ if not Jokermon then
       local attacker_joker = Jokermon.jokers[attacker_key]
       if attacker_joker then
         attacker_joker.stats.damage = attacker_joker.stats.damage + damage_info.damage
-        if u_damage:dead() then
-          local info = HopLib:unit_info_manager():get_info(unit)
-          local cat = info and info:is_special() and "special_kills" or "kills"
-          attacker_joker.stats[cat] = attacker_joker.stats[cat] + 1
-        end
       end
     end
-    if u_damage:dead() and u_damage._jokermon_assists then
+  end)
+
+  Hooks:Add("HopLibOnUnitDied", "HopLibOnUnitDiedJokermon", function(unit, damage_info)
+    local u_damage = unit:character_damage()
+    local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
+    local attacker_joker = Jokermon.jokers[attacker_key]
+    if not attacker_joker then
+      return
+    end
+
+    if u_damage._jokermon_assists then
       for key, dmg in pairs(u_damage._jokermon_assists) do
         -- Assists get exp based on the damage they did, kills get exp based on enemy hp
-        joker = Jokermon.jokers[key]
+        local joker = Jokermon.jokers[key]
         local panel = Jokermon.panels[key]
-        if joker and joker:give_exp(key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg) then
-          Jokermon:set_unit_stats(joker.unit, joker, true)
-          if panel then
+        if joker and panel then
+          if joker:give_exp(key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg) then
+            Jokermon:set_unit_stats(joker.unit, joker, true)
+            Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
             panel:update_hp(joker.hp, joker.hp_ratio)
             panel:update_level(joker.level)
             panel:update_exp(0, true)
+          else
+            panel:update_exp(joker:get_exp_ratio())
           end
-          Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
-        end
-        if joker and panel then
-          panel:update_exp(joker:get_exp_ratio())
         end
       end
+    end
+
+    local info = HopLib:unit_info_manager():get_info(unit)
+    local cat = info and info:is_special() and "special_kills" or "kills"
+    attacker_joker.stats[cat] = attacker_joker.stats[cat] + 1
+    local panel = Jokermon.panels[attacker_key]
+    if panel then
+      info = HopLib:unit_info_manager():get_info(damage_info.attacker_unit)
+      panel:update_kills(info and info:kills() or 0)
     end
   end)
 

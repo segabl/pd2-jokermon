@@ -4,7 +4,9 @@ JokerPanel.COLORS = {
   exp = Color(0.5, 1, 1),
   hp_normal = Color(0.5, 1, 0.5),
   hp_low = Color(1, 1, 0.5),
-  hp_critical = Color(1, 0.5, 0.5)
+  hp_critical = Color(1, 0.5, 0.5),
+  text = Color.white,
+  skull = Color.yellow
 }
 
 local function hp_ratio_to_color(hp_ratio)
@@ -27,7 +29,7 @@ function JokerPanel:init(panel, w)
     text = "",
     font = tweak_data.menu.pd2_medium_font,
     font_size = 16,
-    color = Color.white,
+    color = self.COLORS.text,
     x = self._padding,
     y = self._padding - 1
   })
@@ -37,7 +39,17 @@ function JokerPanel:init(panel, w)
     text = "",
     font = tweak_data.menu.pd2_medium_font,
     font_size = 16,
-    color = Color.white,
+    color = self.COLORS.text:with_alpha(0.75),
+    x = self._padding,
+    y = self._padding - 1
+  })
+
+  self._kills_text = self._panel:text({
+    name = "kills",
+    text = "",
+    font = tweak_data.menu.pd2_medium_font,
+    font_size = 16,
+    color = self.COLORS.text,
     x = self._padding,
     y = self._padding - 1,
     w = self._panel:w() - self._padding * 2,
@@ -57,7 +69,7 @@ function JokerPanel:init(panel, w)
   })
   self._hp_bar = self._panel:rect({
     name = "hp",
-    color = self.COLORS.normal,
+    color = self.COLORS.hp_normal,
     w = self._hp_bar_bg:w(),
     h = self._hp_bar_bg:h(),
     x = self._hp_bar_bg:x(),
@@ -102,10 +114,13 @@ function JokerPanel:init(panel, w)
 end
 
 function JokerPanel:set_width(w)
-  self._panel:set_w(w)
   local max_w = w - self._padding * 2
-  self._hp_bar:set_w((self._hp_bar:w() / self._hp_bar_bg:w()) * max_w)
-  self._exp_bar:set_w((self._exp_bar:w() / self._exp_bar_bg:w()) * max_w)
+  self._panel:set_w(w)
+  self._hp_bar_bg:set_w(max_w)
+  self._hp_bar:set_w(self._hp_ratio * max_w)
+  self._hp_text:set_w(max_w)
+  self._exp_bar_bg:set_w(max_w)
+  self._exp_bar:set_w(self._exp_ratio * max_w)
 end
 
 function JokerPanel:set_position(x, y)
@@ -117,7 +132,15 @@ function JokerPanel:update_name(name)
 end
 
 function JokerPanel:update_level(level)
-  self._lvl_text:set_text(tostring(level))
+  self._lvl_text:set_text(tostring(level) .. " ")
+  local _, _, w, _ = self._lvl_text:text_rect()
+  self._name_text:set_x(self._lvl_text:left() + w)
+end
+
+function JokerPanel:update_kills(kills)
+  kills = tostring(kills)
+  self._kills_text:set_text(kills .. "")
+  self._kills_text:set_range_color(utf8.len(kills), utf8.len(self._kills_text:text()), self.COLORS.skull)
 end
 
 function JokerPanel:update_hp(hp, hp_ratio, instant)
@@ -127,7 +150,7 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
   if instant then
     self._hp_bar:set_color(hp_ratio_to_color(hp_ratio))
     self._hp_bar:set_w(max_w * hp_ratio)
-    self._hp_text:set_text(math.floor(hp * hp_ratio * 10) .. " / " .. math.ceil(hp * 10))
+    self._hp_text:set_text(math.floor(hp * hp_ratio * 10) .. " / " .. math.floor(hp * 10))
   else
     local start = self._hp_ratio
     self._hp_bar:animate(function ()
@@ -135,7 +158,7 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
         local f = math.lerp(start, hp_ratio, p)
         self._hp_bar:set_color(hp_ratio_to_color(f))
         self._hp_bar:set_w(max_w * f)
-        self._hp_text:set_text(math.floor(hp * f * 10) .. " / " .. math.ceil(hp * 10))
+        self._hp_text:set_text(math.floor(hp * f * 10) .. " / " .. math.floor(hp * 10))
       end)
     end)
   end
