@@ -49,7 +49,7 @@ if not Jokermon then
   local to_vec = Vector3()
   function Jokermon:send_or_retrieve_joker()
     local t = managers.player:player_timer():time()
-    if self._jokermon_key_press_t + 1 > t then
+    if self._jokermon_key_press_t + 0.5 > t then
       return
     end
     self._jokermon_key_press_t = t
@@ -59,7 +59,7 @@ if not Jokermon then
       mvector3.set(to_vec, viewport:get_current_camera_rotation():y())
       mvector3.multiply(to_vec, 2000)
       mvector3.add(to_vec, from)
-      local col = World:raycast("ray", from, to_vec, "slot_mask", Jokermon._joker_slot)
+      local col = World:raycast("ray", from, to_vec, "slot_mask", Jokermon._joker_slot, "sphere_cast_radius", 50)
       if col and col.unit and col.unit:base()._jokermon_key then
         return self:retrieve_joker(col.unit)
       end
