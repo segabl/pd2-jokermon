@@ -915,8 +915,11 @@ if not Jokermon then
   end
 
   Hooks:Add("HopLibOnMinionAdded", "HopLibOnMinionAddedJokermon", function(unit, player_unit)
-    local uid = unit:id()
-    Jokermon._unit_id_mappings[uid] = unit
+    if Jokermon._unit_id_mappings[unit:id()] then
+      return
+    end
+
+    Jokermon._unit_id_mappings[unit:id()] = unit
 
     if player_unit ~= managers.player:local_player() then
       return
