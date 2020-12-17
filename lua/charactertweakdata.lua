@@ -1,7 +1,4 @@
-local init_original = CharacterTweakData.init
-function CharacterTweakData:init(...)
-  init_original(self, ...)
-
+Hooks:PostHook(CharacterTweakData, "init", "init_jokermon", function (self)
   for k, v in pairs(self) do
     if type(v) == "table" and v.HEALTH_INIT and v.weapon then
       v.jokermon_stats = {
@@ -10,4 +7,4 @@ function CharacterTweakData:init(...)
       }
     end
   end
-end
+end)
