@@ -179,12 +179,10 @@ if not Jokermon then
     HopLib:unit_info_manager():get_info(unit)._nickname = name
     local peer_id = Keepers and unit:base().kpr_minion_owner_peer_id
     if peer_id then
-      local destroy_label = Keepers.DestroyLabel or Keepers.destroy_label
-      destroy_label(Keepers, unit)
+      Keepers:destroy_label(unit)
       unit:base().kpr_minion_owner_peer_id = peer_id
       Keepers.joker_names[peer_id] = name
-      local set_joker_label = Keepers.SetJokerLabel or Keepers.set_joker_label
-      set_joker_label(Keepers, unit)
+      Keepers:set_joker_label(unit)
     end
     if sync then
       LuaNetworking:SendToPeers("jokermon_name", json.encode({ uid = unit:id(), name = name }))
