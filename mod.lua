@@ -199,8 +199,17 @@ if not Jokermon then
 		u_damage._health_ratio = data.hp_ratio
 		u_damage._health = u_damage._health_ratio * u_damage._HEALTH_INIT
 		u_damage._HEALTH_INIT_PRECENT = u_damage._HEALTH_INIT / u_damage._HEALTH_GRANULARITY
+
+		local u_base = unit:base()
+		local unit_shiny = u_base:has_shiny_effect()
+		if data.shiny and not unit_shiny then
+			u_base:add_shiny_effect()
+		elseif not data.shiny and unit_shiny then
+			u_base:remove_shiny_effect()
+		end
+
 		if sync then
-			LuaNetworking:SendToPeers("jokermon_stats", json.encode({ uid = unit:id(), hp = data.hp, hp_ratio = data.hp_ratio }))
+			LuaNetworking:SendToPeers("jokermon_stats", json.encode({ uid = unit:id(), hp = data.hp, hp_ratio = data.hp_ratio, shiny = data.shiny }))
 		end
 	end
 
@@ -363,7 +372,7 @@ if not Jokermon then
 		local menu_w = self.menu._panel:w()
 		local menu_h = self.menu._panel:h()
 
-		self._menu_w_left = menu_w / 3 - self.menu_padding
+		self._menu_w_left = menu_w / 3.5 - self.menu_padding
 		self._menu_w_right = menu_w - self._menu_w_left - self.menu_padding * 2
 
 		local menu = self.menu:Menu({
@@ -766,8 +775,17 @@ if not Jokermon then
 				joker.name = item:Value()
 				self:save(true)
 			end,
-			position = function (item) item:SetXY(xp:Right() + self.menu_padding / 2, xp:Y()) end
+			position = function (item) item:SetXY(xp:Right() + self.menu_padding / 2 + 12, xp:Y()) end
 		})
+		if joker.shiny then
+			menu.panel:bitmap({
+				texture = "guis/textures/pd2/crimenet_star",
+				x = xp:Right(),
+				y = title:Y() + title:H() / 2 - 8,
+				w = 16,
+				h = 16
+			})
+		end
 		menu:Divider({
 			text = managers.localization:text("Jokermon_menu_hp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100) }),
 			position = function (item) item:SetLeftBottom(title:X(), xp:Bottom()) end
