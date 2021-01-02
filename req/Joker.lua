@@ -1,6 +1,7 @@
 Joker = Joker or class()
 
 Joker.MAX_LEVEL = 100
+Joker.OT_NAMES = {}
 
 function Joker:init(unit, data)
 	self.tweak = data and data.tweak or unit:base()._tweak_table
@@ -15,30 +16,42 @@ function Joker:init(unit, data)
 	local mul = (tweak_data:difficulty_to_index(Global.game_settings.difficulty) - 2) / (#tweak_data.difficulties - 2)
 	local lvl = 1 + math.round(40 * mul + math.random() * 10 + math.random() * 20 * mul)
 	self.exp = data and data.exp or self:level_to_exp(lvl)
-	self.stats = {
-		catch_level = data and data.stats and data.stats.catch_level or lvl,
-		catch_date = data and data.stats and data.stats.catch_date or os.time(),
-		catch_heist = data and data.stats and data.stats.catch_heist or managers.job and managers.job:current_level_id(),
-		catch_difficulty = data and data.stats and data.stats.catch_difficulty or Global.game_settings.difficulty,
-		kills = data and data.stats and data.stats.kills or 0,
-		special_kills = data and data.stats and data.stats.special_kills or 0,
-		damage = data and data.stats and data.stats.damage or 0
-	}
-	if data then
-		self.shiny = data.shiny
-	else
-		self.shiny = unit:base():has_shiny_effect()
-	end
+	self.catch_level = data and (data.catch_level or data.stats and data.stats.catch_level) or lvl
+	self.catch_date = data and (data.catch_date or data.stats and data.stats.catch_date) or os.time()
+	self.catch_heist = data and (data.catch_heist or data.stats and data.stats.catch_heist) or managers.job and managers.job:current_level_id()
+	self.catch_difficulty = data and (data.catch_difficulty or data.stats and data.stats.catch_difficulty) or Global.game_settings.difficulty
+	self.kills = data and (data.kills or data.stats and data.stats.kills) or 0
+	self.special_kills = data and (data.special_kills or data.stats and data.stats.special_kills) or 0
+	self.damage = data and (data.damage or data.stats and data.stats.damage) or 0
+	self.shiny = not data and unit:base():has_shiny_effect() or data and data.shiny
 	self.ot = data and data.ot or Steam:userid()
+
+	self:fetch_owner_name()
 	self:calculate_stats()
 	self:set_unit(unit)
 end
 
 function Joker:randomseed()
-	math.randomseed(self.stats.catch_date)
+	math.randomseed(self.catch_date)
 	math.random()
 	math.random()
 	math.random()
+end
+
+function Joker:fetch_owner_name()
+	if Joker.OT_NAMES[self.ot] then
+		return
+	end
+
+	if self.ot == Steam:userid() then
+		Joker.OT_NAMES[self.ot] = Steam:username()
+		return
+	end
+
+	Joker.OT_NAMES[self.ot] = "pending"
+	Steam:http_request("https://steamcommunity.com/profiles/" .. self.ot .. "/?xml=1", function (success, data)
+		Joker.OT_NAMES[self.ot] = success and data:match("<steamID><!%[CDATA%[(.+)%]%]></steamID>") or "unknown"
+	end)
 end
 
 function Joker:calculate_stats()
@@ -51,8 +64,8 @@ function Joker:calculate_stats()
 		self.hp = tweak_data.character[self.tweak] and tweak_data.character[self.tweak].HEALTH_INIT or 8
 	else
 		self:randomseed()
-		local raised_levels = self.level - self.stats.catch_level
-		self.hp = math.random() * self.base_stats.hp + self.base_stats.hp * (self.stats.catch_level * 0.1 + raised_levels * 0.15)
+		local raised_levels = self.level - self.catch_level
+		self.hp = math.random() * self.base_stats.hp + self.base_stats.hp * (self.catch_level * 0.1 + raised_levels * 0.15)
 	end
 end
 
@@ -105,8 +118,7 @@ function Joker:give_exp(exp)
 end
 
 function Joker:original_owner_name()
-	local n = Steam:username(self.ot)
-	return n == "" and "Unknown" or n
+	return Joker.OT_NAMES[self.ot] or self.ot
 end
 
 function Joker:get_save_data()
@@ -116,9 +128,15 @@ function Joker:get_save_data()
 		name = self.name,
 		hp_ratio = self.hp_ratio,
 		exp = self.exp,
-		stats = self.stats,
-		ot = self.ot,
+		catch_level = self.catch_level,
+		catch_date = self.catch_date,
+		catch_heist = self.catch_heist,
+		catch_difficulty = self.catch_difficulty,
+		kills = self.kills,
+		special_kills = self.special_kills,
+		damage = self.damage,
 		shiny = self.shiny,
+		ot = self.ot,
 		order = self.order
 	}
 end

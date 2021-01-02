@@ -219,7 +219,7 @@ if not Jokermon then
 	}
 	local _sort_val = {
 		default = function (v) return v.order end,
-		[1] = function (v) return v.stats.catch_date end,
+		[1] = function (v) return v.catch_date end,
 		[2] = function (v) return v.level end,
 		[3] = function (v) return v.hp end,
 		[4] = function (v) return v.hp * v.hp_ratio end,
@@ -807,12 +807,12 @@ if not Jokermon then
 		})
 		menu:Divider({
 			text = managers.localization:text("Jokermon_menu_catch_stats", {
-				DATE = os.date("%B %d, %Y at %H:%M", joker.stats.catch_date),
+				DATE = os.date("%B %d, %Y at %H:%M", joker.catch_date),
 				OT = joker:original_owner_name(),
-				LEVEL = joker.stats.catch_level,
-				HEIST = tweak_data.levels[joker.stats.catch_heist] and managers.localization:text(tweak_data.levels[joker.stats.catch_heist].name_id) or "Unknown",
-				DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.stats.catch_difficulty])
-			}) .. "\n" .. managers.localization:text("Jokermon_menu_stats", { KILLS = joker.stats.kills, SPECIAL_KILLS = joker.stats.special_kills, DAMAGE = floor(joker.stats.damage * 10) }) .. "\n" .. self:get_flavour_text(joker),
+				LEVEL = joker.catch_level,
+				HEIST = tweak_data.levels[joker.catch_heist] and managers.localization:text(tweak_data.levels[joker.catch_heist].name_id) or "Unknown",
+				DIFFICULTY = managers.localization:to_upper_text(tweak_data.difficulty_name_ids[joker.catch_difficulty])
+			}) .. "\n" .. managers.localization:text("Jokermon_menu_stats", { KILLS = joker.kills, SPECIAL_KILLS = joker.special_kills, DAMAGE = floor(joker.damage * 10) }) .. "\n" .. self:get_flavour_text(joker),
 			size = self.menu_items_size - 4,
 			foreground = Color.white:with_alpha(0.5)
 		})
@@ -1013,7 +1013,7 @@ if not Jokermon then
 			u_damage._jokermon_assists[attacker_key] = dmg and dmg + damage_info.damage or damage_info.damage
 			local attacker_joker = Jokermon.jokers[attacker_key]
 			if attacker_joker then
-				attacker_joker.stats.damage = attacker_joker.stats.damage + damage_info.damage
+				attacker_joker.damage = attacker_joker.damage + damage_info.damage
 			end
 		end
 	end)
@@ -1047,7 +1047,7 @@ if not Jokermon then
 
 		local info = HopLib:unit_info_manager():get_info(unit)
 		local cat = info and info:is_special() and "special_kills" or "kills"
-		attacker_joker.stats[cat] = attacker_joker.stats[cat] + 1
+		attacker_joker[cat] = attacker_joker[cat] + 1
 		local panel = Jokermon.panels[attacker_key]
 		if panel then
 			info = HopLib:unit_info_manager():get_info(damage_info.attacker_unit)
