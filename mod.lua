@@ -235,7 +235,7 @@ if not Jokermon then
 		table.sort(self.jokers, function (a, b)
 			va, vb = v(a), v(b)
 			if va == vb then
-				return c(a.order, b.order)
+				return c(a.catch_date, b.catch_date)
 			end
 			return c(va, vb)
 		end)
