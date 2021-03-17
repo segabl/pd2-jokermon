@@ -203,9 +203,10 @@ function JokerPanel:update_exp(exp_ratio, instant, level_up)
 						self._exp_bar_flash:set_alpha(1 - p)
 					end)
 				end)
+				start = 0
 			end
 			over(0.5 * exp_ratio / full, function (p)
-				local f = math.lerp(0, exp_ratio, p)
+				local f = math.lerp(start, exp_ratio, p)
 				self._exp_bar:set_w(max_w * f)
 			end)
 		end)
