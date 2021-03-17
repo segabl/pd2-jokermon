@@ -1037,7 +1037,7 @@ if not Jokermon then
 						Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
 						panel:update_hp(joker.hp, joker.hp_ratio)
 						panel:update_level(joker.level)
-						panel:update_exp(0, true)
+						panel:update_exp(joker:get_exp_ratio(), false, true)
 					else
 						panel:update_exp(joker:get_exp_ratio())
 					end

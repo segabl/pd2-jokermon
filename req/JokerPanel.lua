@@ -25,7 +25,6 @@ function JokerPanel:init(panel, w)
 	}, {})
 
 	self._name_text = self._panel:text({
-		name = "name",
 		text = "",
 		font = tweak_data.menu.pd2_medium_font,
 		font_size = 16,
@@ -35,7 +34,6 @@ function JokerPanel:init(panel, w)
 	})
 
 	self._lvl_text = self._panel:text({
-		name = "level",
 		text = "",
 		font = tweak_data.menu.pd2_medium_font,
 		font_size = 16,
@@ -45,7 +43,6 @@ function JokerPanel:init(panel, w)
 	})
 
 	self._kills_text = self._panel:text({
-		name = "kills",
 		text = "",
 		font = tweak_data.menu.pd2_medium_font,
 		font_size = 16,
@@ -58,7 +55,6 @@ function JokerPanel:init(panel, w)
 	})
 
 	self._hp_bar_bg = self._panel:rect({
-		name = "hp_bg",
 		color = Color.black:with_alpha(0.3),
 		w = self._panel:w() - self._padding * 2,
 		h = 12,
@@ -68,7 +64,6 @@ function JokerPanel:init(panel, w)
 		layer = -10
 	})
 	self._hp_bar = self._panel:rect({
-		name = "hp",
 		color = self.COLORS.hp_normal,
 		w = self._hp_bar_bg:w(),
 		h = self._hp_bar_bg:h(),
@@ -76,8 +71,12 @@ function JokerPanel:init(panel, w)
 		y = self._hp_bar_bg:y(),
 		layer = -1
 	})
+	self._hp_bar_flash = self._panel:rect({
+		w = 1,
+		h = 12,
+		alpha = 0
+	})
 	self._hp_text = self._panel:text({
-		name = "hp_text",
 		text = "",
 		font = tweak_data.menu.small_font,
 		font_size = 9,
@@ -91,7 +90,6 @@ function JokerPanel:init(panel, w)
 	self._hp_ratio = 1
 
 	self._exp_bar_bg = self._panel:rect({
-		name = "exp_bg",
 		color = Color.black:with_alpha(0.3),
 		w = self._panel:w() - self._padding * 2,
 		h = 4,
@@ -101,13 +99,20 @@ function JokerPanel:init(panel, w)
 		layer = -10
 	})
 	self._exp_bar = self._panel:rect({
-		name = "exp",
 		color = self.COLORS.exp,
 		w = self._exp_bar_bg:w(),
 		h = self._exp_bar_bg:h(),
 		x = self._exp_bar_bg:x(),
 		y = self._exp_bar_bg:y(),
 		layer = -1
+	})
+	self._exp_bar_flash = self._panel:rect({
+		color = self.COLORS.exp,
+		alpha = 0,
+		w = self._exp_bar_bg:w(),
+		h = self._exp_bar_bg:h(),
+		x = self._exp_bar_bg:x(),
+		y = self._exp_bar_bg:y()
 	})
 	self._exp_ratio = 0
 
@@ -161,11 +166,22 @@ function JokerPanel:update_hp(hp, hp_ratio, instant)
 				self._hp_text:set_text(math.floor(hp * f * 10) .. " / " .. math.floor(hp * 10))
 			end)
 		end)
+		if hp_ratio < start then
+			self._hp_bar_flash:animate(function ()
+				self._hp_bar_flash:set_w(math.max(max_w * (start - hp_ratio), 1))
+				self._hp_bar_flash:set_right(self._hp_bar:x() + max_w * start)
+				over(0.1, function (p)
+					self._hp_bar_flash:set_h(12 + 16 * p)
+					self._hp_bar_flash:set_alpha(1 - p)
+					self._hp_bar_flash:set_center_y(self._hp_bar:center_y())
+				end)
+			end)
+		end
 	end
 	self._hp_ratio = hp_ratio
 end
 
-function JokerPanel:update_exp(exp_ratio, instant)
+function JokerPanel:update_exp(exp_ratio, instant, level_up)
 	self._exp_bar:stop()
 	exp_ratio = math.max(0, math.min(1, exp_ratio))
 	local max_w = self._panel:w() - self._padding * 2
@@ -173,9 +189,23 @@ function JokerPanel:update_exp(exp_ratio, instant)
 		self._exp_bar:set_w(max_w * exp_ratio)
 	else
 		local start = self._exp_ratio
+		local full = level_up and 1 - start + exp_ratio or exp_ratio
 		self._exp_bar:animate(function ()
-			over(0.5, function (p)
-				local f = math.lerp(start, exp_ratio, p)
+			if level_up then
+				over(0.5 * (1 - start) / full, function (p)
+					local f = math.lerp(start, 1, p)
+					self._exp_bar:set_w(max_w * f)
+				end)
+				self._exp_bar_flash:animate(function ()
+					over(0.1, function (p)
+						self._exp_bar_flash:set_size(self._exp_bar_bg:w() + p * 16, self._exp_bar_bg:h() + p * 16)
+						self._exp_bar_flash:set_center(self._exp_bar_bg:center_x(), self._exp_bar_bg:center_y())
+						self._exp_bar_flash:set_alpha(1 - p)
+					end)
+				end)
+			end
+			over(0.5 * exp_ratio / full, function (p)
+				local f = math.lerp(0, exp_ratio, p)
 				self._exp_bar:set_w(max_w * f)
 			end)
 		end)
@@ -185,6 +215,8 @@ end
 
 function JokerPanel:remove()
 	self._hp_bar:stop()
+	self._hp_bar_flash:stop()
 	self._exp_bar:stop()
+	self._exp_bar_flash:stop()
 	self._parent_panel:remove(self._panel)
 end
