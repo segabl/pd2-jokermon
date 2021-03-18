@@ -1,16 +1,16 @@
 <effect force_synch="false">
-	<atom name="Sparkles" min_size="10" max_size="10" lifetime="-1" random_start_time="false" start_time="0" preroll="0" inherit_velocity_multiplier="1" fade_in_start="-1" fade_in_length="2" fade_out_start="-1" spawn_cull_policy="initialize" cull_policy="update" cull_gracetime="1" max_particle_radius="-1" soundbank="" cue="" ambient="true" grab_relative="effect" grab_pos="0 0 0" grab_radius="200" grab_backfacing="false" timeline="">
+	<atom name="Sparkles" min_size="20" max_size="30" lifetime="-1" random_start_time="false" start_time="0" preroll="0" inherit_velocity_multiplier="1" fade_in_start="-1" fade_in_length="2" fade_out_start="-1" spawn_cull_policy="initialize" cull_policy="update" cull_gracetime="1" max_particle_radius="-1" soundbank="" cue="" ambient="true" grab_relative="effect" grab_pos="0 0 0" grab_radius="200" grab_backfacing="false" timeline="">
 		<initializerstack>
 			<boxrandomposition relative="effect" min="0 0 0" max="0 0 0"/>
 			<boxrandomvelocity relative="effect" min="0 0 0" max="0 0 0"/>
-			<boxrandomaspectsize size="30 30" min="0.5" max="1"/>
+			<boxrandomaspectsize size="20 20" min="0.25" max="1"/>
 			<boxrandomage min="0" max="1"/>
 			<boxrandomangle min="0" max="0"/>
 		</initializerstack>
 		<simulatorstack>
 			<ager/>
 			<teleporter name="" trigger_teleport="time" lifetime_input="constant" particle_lifetime="1" teleport_cap="11" current_position="false" channel="world" normal_variation="0.98" teleport_event="false" positioner="box">
-				<box min="-40 -60 -40" max="40 70 40" min_normal="-1 -1 -1" max_normal="1 1 1"/>
+				<box min="-35 -60 -35" max="35 70 35" min_normal="-1 -1 -1" max_normal="1 1 1"/>
 				<normal min_velocity="0" max_velocity="0"/>
 			</teleporter>
 			<velocityintegrator channel="world"/>
