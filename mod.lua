@@ -136,8 +136,12 @@ if not Jokermon then
 				if not alive(data.player_unit) then
 					World:delete_unit(data.unit)
 				else
-					if Keepers then
-						Keepers.joker_names[data.player_unit:network():peer():id()] = data.joker.name
+					if Keepers and Keepers.settings.send_my_joker_name then
+						local peer_id = data.player_unit:network():peer():id()
+						local my_joker = peer_id == (managers.network:session() and managers.network:session():local_peer():id())
+						if my_joker and Keepers.settings.show_my_joker_name or not my_joker and Keepers.settings.show_other_jokers_names then
+							Keepers.joker_names[peer_id] = data.joker.name
+						end
 					end
 					data.unit:brain():set_active(true)
 					data.unit:inventory():destroy_all_items()
@@ -180,10 +184,14 @@ if not Jokermon then
 		HopLib:unit_info_manager():get_info(unit)._nickname = name
 		local peer_id = Keepers and unit:base().kpr_minion_owner_peer_id
 		if peer_id then
-			Keepers:destroy_label(unit)
-			unit:base().kpr_minion_owner_peer_id = peer_id
-			Keepers.joker_names[peer_id] = name
-			Keepers:set_joker_label(unit)
+			local name_label_id = unit:unit_data().name_label_id
+			local name_label = name_label_id and managers.hud:_get_name_label(name_label_id)
+			if name_label and name_label.panel:child("text") and name_label.panel:child("text"):text() ~= "" then
+				Keepers:destroy_label(unit)
+				unit:base().kpr_minion_owner_peer_id = peer_id
+				Keepers.joker_names[peer_id] = name
+				Keepers:set_joker_label(unit)
+			end
 		end
 		if sync then
 			LuaNetworking:SendToPeers("jokermon_name", json.encode({ uid = unit:id(), name = name }))
