@@ -3,7 +3,7 @@
   "Jokermon_menu_main_desc" : "自定义条可梦设定",
   "Jokermon_menu_base_settings" : "一般设置",
   "Jokermon_menu_spawn_mode" : "生成模式",
-  "Jokermon_menu_spawn_mode_desc" : "无论是手动模式还是自动模式，在按下绑定案件后都会马上召唤你的条可梦。",
+  "Jokermon_menu_spawn_mode_desc" : "手动：通过手动按键来召唤你的条可梦。自动：由电脑控制随时召唤条可梦。",
   "Jokermon_menu_spawn_mode_manual" : "手动",
   "Jokermon_menu_spawn_mode_automatic" : "自动",
   "Jokermon_menu_nuzlocke" : "Nuzlocke模式",
