@@ -104,10 +104,10 @@
   "Jokermon_message_faint" : "$NAME 失去意识了！",
   "Jokermon_message_die" : "$NAME 死亡了！",
   "Jokermon_message_levelup" : "$NAME 到达了等级 $LEVEL!",
-  "Jokermon_message_capture" : "抓不到了等级 $LEVEL $NAME!",
+  "Jokermon_message_capture" : "抓到了等级为 $LEVEL 的 $NAME！",
   "Jokermon_message_no_company" : "$NAME 没法在此劫案中被召唤。",
   "Jokermon_message_go" : "$NAME，就决定是你了！",
   "Jokermon_message_retrieve" : "回来吧！$NAME！",
-  "Jokermon_message_nuzlocke" : "你没法再抓捕更多条可梦了！ (Nuzlocke模式)",
+  "Jokermon_message_nuzlocke" : "你没法再抓捕更多条可梦了！ (因为开启了Nuzlocke模式)",
   "Jokermon_message_box_full" : "你的条可梦仓库满了！放生一些条可梦后再来抓捕吧。"
 }
