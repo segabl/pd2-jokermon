@@ -136,7 +136,7 @@ if not Jokermon then
 				if not alive(data.player_unit) then
 					World:delete_unit(data.unit)
 				else
-					if Keepers and Keepers.settings.send_my_joker_name then
+					if Keepers and Keepers.settings and Keepers.settings.send_my_joker_name then
 						local peer_id = data.player_unit:network():peer():id()
 						local my_joker = peer_id == (managers.network:session() and managers.network:session():local_peer():id())
 						if my_joker and Keepers.settings.show_my_joker_name or not my_joker and Keepers.settings.show_other_jokers_names then
