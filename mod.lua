@@ -966,7 +966,7 @@ if not Jokermon then
 			-- Create new Jokermon entry
 			key = #Jokermon.jokers + 1
 			joker = Joker:new(unit)
-			joker.discard = Jokermon.settings.temporary or nil
+			joker.discard = Jokermon.settings.temporary and not unit:base():has_shiny_effect() or nil
 			table.insert(Jokermon.jokers, joker)
 
 			Jokermon._jokers_added = Jokermon._jokers_added + 1
