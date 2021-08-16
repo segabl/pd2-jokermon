@@ -573,6 +573,7 @@ if not Jokermon then
 			text = "Jokermon_menu_key_menu",
 			help = "Jokermon_menu_key_menu_desc",
 			value = self.settings.keys.menu,
+			supports_mouse = true,
 			on_callback = function (item)
 				self:change_key_binding(item)
 			end
@@ -582,6 +583,7 @@ if not Jokermon then
 			text = "Jokermon_menu_key_spawn_joker",
 			help = "Jokermon_menu_key_spawn_joker_desc",
 			value = self.settings.keys.spawn_joker,
+			supports_mouse = true,
 			on_callback = function (item)
 				self:change_key_binding(item)
 			end
