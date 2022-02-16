@@ -8,3 +8,9 @@ Hooks:PreHook(GroupAIStateBase, "unregister_criminal", "unregister_criminal_joke
 		record.minions = nil
 	end
 end)
+
+Hooks:PostHook(GroupAIStateBase, "on_enemy_weapons_hot", "on_enemy_weapons_hot_jokermon", function (self)
+	if Jokermon.settings.spawn_mode ~= 1 then
+		Jokermon:send_out_joker(managers.player:upgrade_value("player", "convert_enemies_max_minions", 0))
+	end
+end)

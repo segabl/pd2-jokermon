@@ -41,6 +41,8 @@ if not Jokermon then
 	Jokermon._jokermon_key_press_t = 0
 	Jokermon._jokermon_peers = {}
 
+	local unit_ids = Idstring("unit")
+
 	function Jokermon:display_message(message, macros, force)
 		if force or Jokermon.settings.show_messages then
 			managers.chat:_receive_message(1, "JOKERMON", managers.localization:text(message, macros), tweak_data.system_chat_color)
@@ -107,23 +109,34 @@ if not Jokermon then
 		if not alive(player_unit) then
 			return
 		end
+
+		local ids_xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
+		local ids = ids_xml and ids_xml.id
+		if type(ids) ~= "userdata" then
+			return
+		end
+
 		local is_local_player = player_unit == managers.player:local_player()
-		local xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
-		local ids = xml and xml.id
-		if type(ids) == "userdata" and PackageManager:has(Idstring("unit"), ids) then
+
+		if PackageManager:has(unit_ids, ids) then
 			if is_local_player then
 				table.insert(self._queued_keys, index)
 			end
+
 			-- If we are client, request spawn from server
 			if Network:is_client() then
 				LuaNetworking:SendToPeer(1, "jokermon_spawn", json.encode({ uname = joker.uname, name = joker.name }))
 				return true
 			end
+
+			-- Spawn unit as server
 			local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-50, 50), math.random(-50, 50), 0), player_unit:rotation())
 			unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
 			unit:brain():set_active(false)
+
 			-- Queue for conversion (to avoid issues when converting instantly after spawn)
 			self:queue_unit_convert(unit, is_local_player, player_unit, joker)
+
 			return true
 		elseif is_local_player then
 			self:display_message("Jokermon_message_no_company", { NAME = joker.name })
@@ -414,7 +427,7 @@ if not Jokermon then
 			free_typing = false,
 			on_callback = function (item)
 				self:change_menu_setting(item)
-				if self.settings.spawn_mode > 1 and Utils:IsInHeist() then
+				if self.settings.spawn_mode > 1 and Utils:IsInHeist() and managers.groupai:state():enemy_weapons_hot() then
 					self:send_out_joker(managers.player:upgrade_value("player", "convert_enemies_max_minions", 0))
 				end
 			end
@@ -815,7 +828,7 @@ if not Jokermon then
 				self:save(true)
 			end
 		})
-		menu:Divider({
+		local stats = menu:Divider({
 			text = managers.localization:text("Jokermon_menu_catch_stats", {
 				DATE = os.date("%B %d, %Y at %H:%M", joker.catch_date),
 				OT = joker:original_owner_name(),
@@ -826,6 +839,19 @@ if not Jokermon then
 			size = self.menu_items_size - 4,
 			foreground = Color.white:with_alpha(0.5)
 		})
+		local weap_id = joker:get_weapon_id()
+		local weap_icon = weap_id and managers.blackmarket:get_weapon_icon_path(weap_id)
+		if weap_icon then
+			stats.panel:bitmap({
+				texture = weap_icon,
+				x = stats.panel:w() - 96,
+				y = stats.panel:h() / 2 - 24,
+				w = 96,
+				h = 48,
+				layer = -1,
+				alpha = 0.5
+			})
+		end
 		local heal_price = joker:get_heal_price()
 		local heal = menu:Button({
 			text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = self:make_money_string(heal_price) }),
