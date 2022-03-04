@@ -839,19 +839,6 @@ if not Jokermon then
 			size = self.menu_items_size - 4,
 			foreground = Color.white:with_alpha(0.5)
 		})
-		local weap_id = joker:get_weapon_id()
-		local weap_icon = weap_id and managers.blackmarket:get_weapon_icon_path(weap_id)
-		if weap_icon then
-			stats.panel:bitmap({
-				texture = weap_icon,
-				x = stats.panel:w() - 96,
-				y = stats.panel:h() / 2 - 24,
-				w = 96,
-				h = 48,
-				layer = -1,
-				alpha = 0.5
-			})
-		end
 		local heal_price = joker:get_heal_price()
 		local heal = menu:Button({
 			text = managers.localization:text(joker.hp_ratio <= 0 and "Jokermon_menu_action_revive" or "Jokermon_menu_action_heal", { COST = self:make_money_string(heal_price) }),

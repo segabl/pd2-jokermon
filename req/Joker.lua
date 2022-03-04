@@ -2,50 +2,6 @@ Joker = Joker or class()
 
 Joker.MAX_LEVEL = 100
 Joker.OT_NAMES = {}
-Joker.WEAPON_MAPPING = {}
-Joker.WEAPON_ID_MAPPING = {
-	beretta92 = "b92fs",
-	c45 = "glock_17",
-	raging_bull = "new_raging_bull",
-	m4 = "new_m4",
-	m4_yellow = "new_m4",
-	ak47 = "ak74",
-	mossberg = "huntsman",
-	mp5 = "new_mp5",
-	mp5_tactical = "new_mp5",
-	mac11 = "mac10",
-	m14_sniper_npc = "g3",
-	ump = "schakal",
-	scar_murky = "scar",
-	rpk_lmg = "rpk",
-	svd_snp = "siltstone",
-	ak47_ass = "ak74",
-	x_c45 = "x_g17",
-	sg417 = "contraband",
-	svdsil_snp = "siltstone",
-	mini = "m134",
-	heavy_zeal_sniper = "g3"
-}
-function Joker.find_player_weapon_id(npc_id)
-	if Joker.WEAPON_ID_MAPPING[npc_id] then
-		return Joker.WEAPON_ID_MAPPING[npc_id]
-	end
-
-	local w_tweak = tweak_data.weapon
-
-	if w_tweak[npc_id] then
-		Joker.WEAPON_ID_MAPPING[npc_id] = npc_id
-		return npc_id
-	end
-
-	local stripped_id = npc_id:gsub("_lmg$", ""):gsub("_smg$", ""):gsub("_ass$", ""):gsub("_npc$", "")
-	if w_tweak[stripped_id] then
-		Joker.WEAPON_ID_MAPPING[npc_id] = stripped_id
-		return stripped_id
-	end
-
-	return stripped_id
-end
 
 function Joker:init(unit, data)
 	self.tweak = data and data.tweak or unit:base()._tweak_table
@@ -96,37 +52,6 @@ function Joker:fetch_owner_name()
 	Steam:http_request("https://steamcommunity.com/profiles/" .. self.ot .. "/?xml=1", function (success, data)
 		Joker.OT_NAMES[self.ot] = success and data:match("<steamID><!%[CDATA%[(.+)%]%]></steamID>") or "unknown"
 	end)
-end
-
-function Joker:get_weapon_id()
-	do return end -- Disabled for now (read_file is bugged)
-
-	if Joker.WEAPON_MAPPING[self.uname] ~= nil then
-		return Joker.WEAPON_MAPPING[self.uname]
-	end
-
-	Joker.WEAPON_MAPPING[self.uname] = false
-
-	local data = blt.asset_db.read_file("#" .. self.uname, "unit", { optional = false })
-	data = data and ScriptSerializer:from_custom_xml(data)
-	if not data or not data.extensions then
-		return Joker.WEAPON_MAPPING[self.uname]
-	end
-
-	for _, ext in pairs(data.extensions) do
-		if ext.name == "base" then
-			for _, var in pairs(ext) do
-				if type(var) == "table" and var.name == "_default_weapon_id" then
-					local w = Joker.find_player_weapon_id(var.value)
-					Joker.WEAPON_MAPPING[self.uname] = tweak_data.weapon[w] and w or false
-					break
-				end
-			end
-			break
-		end
-	end
-
-	return Joker.WEAPON_MAPPING[self.uname]
 end
 
 function Joker:calculate_stats()
