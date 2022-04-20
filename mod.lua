@@ -1054,14 +1054,16 @@ if not Jokermon then
 				-- Assists get exp based on the damage they did, kills get exp based on enemy hp
 				local joker = Jokermon.jokers[key]
 				local panel = Jokermon.panels[key]
-				if joker and panel then
+				if joker and alive(joker.unit) then
 					if joker:give_exp(key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg) then
 						Jokermon:set_unit_stats(joker.unit, joker, true)
 						Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
-						panel:update_hp(joker.hp, joker.hp_ratio)
-						panel:update_level(joker.level)
-						panel:update_exp(joker:get_exp_ratio(), false, true)
-					else
+						if panel then
+							panel:update_hp(joker.hp, joker.hp_ratio)
+							panel:update_level(joker.level)
+							panel:update_exp(joker:get_exp_ratio(), false, true)
+						end
+					elseif panel then
 						panel:update_exp(joker:get_exp_ratio())
 					end
 				end
