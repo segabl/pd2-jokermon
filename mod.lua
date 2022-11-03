@@ -1140,11 +1140,4 @@ if not Jokermon then
 
 end
 
-if RequiredScript then
-
-	local fname = Jokermon.mod_path .. "lua/" .. RequiredScript:gsub(".+/(.+)", "%1.lua")
-	if io.file_is_readable(fname) then
-		dofile(fname)
-	end
-
-end
+HopLib:run_required(Jokermon.mod_path .. "lua/")
