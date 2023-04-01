@@ -40,7 +40,7 @@
   "Jokermon_menu_management" : "조커 관리",
   "Jokermon_menu_sorting" : "정렬",
   "Jokermon_menu_sorting_desc" : "조커 목록 정렬 방법. 하이스트로 보내지는 순서에 영향을 미칩니다",
-  "Jokermon_menu_sorting_date" : "캡처 날짜별",
+  "Jokermon_menu_sorting_date" : " 날짜별",
   "Jokermon_menu_sorting_level" : "레벨 순서 기준",
   "Jokermon_menu_sorting_max_hp" : "최대 HP 기준",
   "Jokermon_menu_sorting_hp" : "현재 HP 기준",
@@ -50,7 +50,7 @@
   "Jokermon_menu_sorting_total_exp" : "필요한 총 EXP 기준",
   "Jokermon_menu_sorting_custom" : "커스텀",
   "Jokermon_menu_sorting_order" : "오더",
-  "Jokermon_menu_sorting_order_desc" : "내림차순",
+  "Jokermon_menu_sorting_order_desc": "내림차순",
   "Jokermon_menu_sorting_order_asc" : "오름차순",
   "Jokermon_menu_stats" : "$KILLS 일반 경찰 죽임, $SPECIAL_KILLS 특수 경찰 죽임, $DAMAGE 총 데미지",
   "Jokermon_menu_hp" : "$HP / $MAXHP HP ($HPRATIO%)",
@@ -104,10 +104,10 @@
   "Jokermon_message_faint" : "$NAME 기절함!",
   "Jokermon_message_die" : "$NAME 죽음!",
   "Jokermon_message_levelup" : "$NAME 레벨업 $LEVEL!",
-  "Jokermon_message_capture" : "캡처 레벨 $LEVEL $NAME!",
+  "Jokermon_message_capture" : "조커 레벨 $LEVEL $NAME!",
   "Jokermon_message_no_company" : "$NAME 는 이 하이스트에서 부를 수 없습니다.",
   "Jokermon_message_go" : "가라, $NAME!",
   "Jokermon_message_retrieve" : "$NAME, 돌아와!",
   "Jokermon_message_nuzlocke" : "더 많은 조커를 만들 수 없습니다, (Nuzlocke 규칙)!",
-  "Jokermon_message_box_full" : "조커가 가득 찼습니다! 새 조커를 캡처하려면 하나 이상의 조커를 제거하십시오!"
+  "Jokermon_message_box_full" : "조커가 가득 찼습니다! 새 조커를 만들려면 하나 이상의 조커를 제거하십시오!"
 }
