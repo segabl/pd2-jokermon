@@ -25,6 +25,7 @@ function Joker:init(unit, data)
 	self.damage = data and (data.damage or data.stats and data.stats.damage) or 0
 	self.shiny = not data and unit:base():has_shiny_effect() or data and data.shiny
 	self.ot = data and data.ot or Steam:userid()
+	self.wname = data and data.wname or alive(unit) and unit:base():default_weapon_name():key()
 
 	self:fetch_owner_name()
 	self:calculate_stats()
@@ -137,6 +138,7 @@ function Joker:get_save_data()
 		damage = self.damage,
 		shiny = self.shiny,
 		ot = self.ot,
-		order = self.order
+		order = self.order,
+		wname = self.wname
 	}
 end

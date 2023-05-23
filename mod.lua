@@ -45,7 +45,7 @@ if not Jokermon then
 
 	function Jokermon:display_message(message, macros, force)
 		if force or Jokermon.settings.show_messages then
-			managers.chat:_receive_message(1, "JOKERMON", managers.localization:text(message, macros), tweak_data.system_chat_color)
+			managers.chat:_receive_message(1, managers.localization:to_upper_text("Jokermon_menu_main_name"), managers.localization:text(message, macros), tweak_data.system_chat_color)
 		end
 	end
 
@@ -105,14 +105,21 @@ if not Jokermon then
 		end
 	end
 
+	function Jokermon:get_unit_name(key)
+		local ids_xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", key))
+		local ids = ids_xml and ids_xml.id
+		if type_name(ids) == "Idstring" then
+			return ids
+		end
+	end
+
 	function Jokermon:spawn(joker, index, player_unit)
 		if not alive(player_unit) then
 			return
 		end
 
-		local ids_xml = ScriptSerializer:from_custom_xml(string.format("<table type=\"table\" id=\"@ID%s@\">", joker.uname))
-		local ids = ids_xml and ids_xml.id
-		if type(ids) ~= "userdata" then
+		local ids = self:get_unit_name(joker.uname)
+		if not ids then
 			return
 		end
 
@@ -125,7 +132,7 @@ if not Jokermon then
 
 			-- If we are client, request spawn from server
 			if Network:is_client() then
-				LuaNetworking:SendToPeer(1, "jokermon_spawn", json.encode({ uname = joker.uname, name = joker.name }))
+				LuaNetworking:SendToPeer(1, "jokermon_spawn", json.encode({ uname = joker.uname, name = joker.name, wname = joker.wname }))
 				return true
 			end
 
@@ -133,6 +140,12 @@ if not Jokermon then
 			local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-50, 50), math.random(-50, 50), 0), player_unit:rotation())
 			unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
 			unit:brain():set_active(false)
+
+			-- Set weapon
+			local weapon_name = joker.wname and self:get_unit_name(joker.wname)
+			if weapon_name and PackageManager:has(unit_ids, weapon_name) then
+				unit:base().default_weapon_name = function () return weapon_name end
+			end
 
 			-- Queue for conversion (to avoid issues when converting instantly after spawn)
 			self:queue_unit_convert(unit, is_local_player, player_unit, joker)
@@ -1035,8 +1048,7 @@ if not Jokermon then
 		local attacker_key = alive(damage_info.attacker_unit) and damage_info.attacker_unit:base()._jokermon_key
 		if attacker_key then
 			u_damage._jokermon_assists = u_damage._jokermon_assists or {}
-			local dmg = u_damage._jokermon_assists[attacker_key]
-			u_damage._jokermon_assists[attacker_key] = dmg and dmg + damage_info.damage or damage_info.damage
+			u_damage._jokermon_assists[attacker_key] = true
 			local attacker_joker = Jokermon.jokers[attacker_key]
 			if attacker_joker then
 				attacker_joker.damage = attacker_joker.damage + damage_info.damage
@@ -1053,12 +1065,11 @@ if not Jokermon then
 		end
 
 		if u_damage._jokermon_assists then
-			for key, dmg in pairs(u_damage._jokermon_assists) do
-				-- Assists get exp based on the damage they did, kills get exp based on enemy hp
+			for key, _ in pairs(u_damage._jokermon_assists) do
 				local joker = Jokermon.jokers[key]
 				local panel = Jokermon.panels[key]
 				if joker and alive(joker.unit) then
-					if joker:give_exp(key == attacker_key and math.max(u_damage._HEALTH_INIT, dmg) or dmg) then
+					if joker:give_exp(u_damage._HEALTH_INIT * (key == attacker_key and 1 or 0.5)) then
 						Jokermon:set_unit_stats(joker.unit, joker, true)
 						Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
 						if panel then
