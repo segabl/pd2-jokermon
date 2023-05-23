@@ -826,7 +826,8 @@ if not Jokermon then
 			})
 		end
 		menu:Divider({
-			text = managers.localization:text("Jokermon_menu_hp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100) }),
+			size = self.menu_items_size - 4,
+			text = joker:weapon_name() .. "\n" .. managers.localization:text("Jokermon_menu_hp", { HP = floor(joker.hp * joker.hp_ratio * 10), MAXHP = floor(joker.hp * 10), HPRATIO = floor(joker.hp_ratio * 100) }),
 			position = function (item) item:SetLeftBottom(title:X(), xp:Bottom()) end
 		})
 		menu:NumberBox({

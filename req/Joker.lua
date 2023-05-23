@@ -2,6 +2,35 @@ Joker = Joker or class()
 
 Joker.MAX_LEVEL = 100
 Joker.OT_NAMES = {}
+Joker.WEAP_NAMES = {}
+Joker.WEAP_MAPPING = {
+	beretta92 = "b92fs",
+	c45 = "glock_17",
+	raging_bull = "new_raging_bull",
+	m4 = "new_m4",
+	m4_yellow = "new_m4",
+	ak47 = "ak74",
+	mossberg = "huntsman",
+	mp5 = "new_mp5",
+	mp5_tactical = "new_mp5",
+	mac11 = "mac10",
+	m14_sniper_npc = "g3",
+	ump = "schakal",
+	scar_murky = "scar",
+	rpk_lmg = "rpk",
+	svd_snp = "siltstone",
+	akmsu_smg = "akmsu",
+	asval_smg = "asval",
+	sr2_smg = "sr2",
+	ak47_ass = "ak74",
+	x_c45 = "x_g17",
+	sg417 = "contraband",
+	svdsil_snp = "siltstone",
+	mini = "m134",
+	heavy_zeal_sniper = "g3",
+	dmr = "victor",
+	sko12_conc = "sko12"
+}
 
 function Joker:init(unit, data)
 	self.tweak = data and data.tweak or unit:base()._tweak_table
@@ -25,7 +54,7 @@ function Joker:init(unit, data)
 	self.damage = data and (data.damage or data.stats and data.stats.damage) or 0
 	self.shiny = not data and unit:base():has_shiny_effect() or data and data.shiny
 	self.ot = data and data.ot or Steam:userid()
-	self.wname = data and data.wname or alive(unit) and unit:base():default_weapon_name():key()
+	self.wname = not data and (unit:inventory():equipped_unit():base()._old_unit_name or unit:inventory():equipped_unit():name()):key() or data and data.wname
 
 	self:fetch_owner_name()
 	self:calculate_stats()
@@ -98,6 +127,7 @@ function Joker:set_unit(unit)
 		if tweak ~= self.tweak or uname ~= self.uname then
 			log(string.format("[Jokermon] Warning: Unit mismatch! Expected %s (%s), got %s (%s)!", tostring(HopLib:name_provider().UNIT_MAPPIGS[self.uname]), self.tweak, tostring(HopLib:name_provider().UNIT_MAPPIGS[uname]), tweak))
 		end
+		self.wname = self.wname or (unit:inventory():equipped_unit():base()._old_unit_name or unit:inventory():equipped_unit():name()):key()
 	end
 	self.unit = unit
 end
@@ -120,6 +150,64 @@ end
 
 function Joker:original_owner_name()
 	return Joker.OT_NAMES[self.ot] or self.ot
+end
+
+function Joker:weapon_name()
+	if Joker.WEAP_NAMES[self.wname] then
+		return Joker.WEAP_NAMES[self.wname]
+	end
+
+	local ids = self.wname and Jokermon:get_unit_name(self.wname)
+	if not ids then
+		return ""
+	end
+
+	local file = DB:open("unit", ids)
+	if not file then
+		Joker.WEAP_NAMES[self.wname] = ""
+		return ""
+	end
+
+	local unit_data = ScriptSerializer:from_custom_xml(file:read("*a"))
+	file:close()
+
+	local extensions = unit_data and unit_data.extensions
+	if not extensions then
+		Joker.WEAP_NAMES[self.wname] = ""
+		return ""
+	end
+
+	local name
+	for _, ext in ipairs(extensions) do
+		for _, var in ipairs(ext) do
+			if var.name == "name_id" then
+				name = var.value
+				break
+			end
+		end
+		if name then
+			break
+		end
+	end
+
+	if not name then
+		Joker.WEAP_NAMES[self.wname] = ""
+		return ""
+	end
+
+	name = name:gsub("_npc$", ""):gsub("_crew$", "")
+	name = Joker.WEAP_MAPPING[name] or name
+
+	local player_weap = tweak_data.weapon[name]
+	if player_weap and player_weap.name_id then
+		name = managers.localization:text(player_weap.name_id)
+	else
+		name = name:pretty():upper()
+	end
+
+	Joker.WEAP_NAMES[self.wname] = name
+
+	return name
 end
 
 function Joker:get_save_data()
