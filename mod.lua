@@ -1070,7 +1070,7 @@ if not Jokermon then
 				local joker = Jokermon.jokers[key]
 				local panel = Jokermon.panels[key]
 				if joker and alive(joker.unit) then
-					if joker:give_exp(u_damage._HEALTH_INIT * (key == attacker_key and 1 or 0.5)) then
+					if joker:give_exp(u_damage._HEALTH_INIT) then
 						Jokermon:set_unit_stats(joker.unit, joker, true)
 						Jokermon:display_message("Jokermon_message_levelup", { NAME = joker.name, LEVEL = joker.level })
 						if panel then
