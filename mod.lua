@@ -1021,7 +1021,7 @@ if not Jokermon then
 			end
 			Jokermon:remove_panel(key)
 			if Jokermon.settings.spawn_mode ~= 1 then
-				Jokermon:send_out_joker(1, true)
+				call_on_next_update(function () Jokermon:send_out_joker(1, true) end)
 			end
 			unit:base()._jokermon_key = nil
 		end
