@@ -53,7 +53,7 @@ function Joker:init(unit, data)
 	self.special_kills = data and (data.special_kills or data.stats and data.stats.special_kills) or 0
 	self.damage = data and (data.damage or data.stats and data.stats.damage) or 0
 	self.shiny = not data and unit:base():has_shiny_effect() or data and data.shiny
-	self.ot = data and data.ot or Steam:userid()
+	self.ot = data and data.ot or Steam and Steam:userid()
 	self.wname = not data and (unit:inventory():equipped_unit():base()._old_unit_name or unit:inventory():equipped_unit():name()):key() or data and data.wname
 
 	self:fetch_owner_name()
@@ -70,6 +70,10 @@ end
 
 function Joker:fetch_owner_name()
 	if Joker.OT_NAMES[self.ot] then
+		return
+	end
+
+	if not Steam then
 		return
 	end
 
@@ -149,7 +153,7 @@ function Joker:give_exp(exp)
 end
 
 function Joker:original_owner_name()
-	return Joker.OT_NAMES[self.ot] or self.ot
+	return Joker.OT_NAMES[self.ot] or self.ot or "unknown"
 end
 
 function Joker:weapon_name()
