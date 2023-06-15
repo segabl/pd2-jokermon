@@ -137,7 +137,7 @@ function Joker:set_unit(unit)
 end
 
 function Joker:give_exp(exp)
-	exp = math.ceil(exp * (self.ot ~= Steam:userid() and 1.5 or 1))
+	exp = math.ceil(exp * (Steam and self.ot ~= Steam:userid() and 1.5 or 1))
 	if self.level < Joker.MAX_LEVEL then
 		local old_level = self.level
 		self.exp = self.exp + exp
