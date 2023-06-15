@@ -353,24 +353,22 @@ if not Jokermon then
 	end
 
 	function Jokermon:load()
-		local file = io.open(self.save_path .. "jokermon_settings.txt", "r")
-		if file then
-			local data = json.decode(file:read("*all"))
-			file:close()
+		local save_file = self.save_path .. "jokermon_settings.txt"
+		local data = io.file_is_readable(save_file) and io.load_as_json(save_file)
+		if data then
 			for k, v in pairs(data) do
 				self.settings[k] = v
 			end
 		end
-		file = io.open(self.save_path .. "jokermon.txt", "r")
-		if file then
+		local jokers_file = self.save_path .. "jokermon.txt"
+		local jokers = io.file_is_readable(jokers_file) and io.load_as_json(jokers_file)
+		if jokers then
 			self.jokers = {}
-			local jokers = json.decode(file:read("*all"))
-			file:close()
-			for _, data in pairs(jokers) do
-				if data.uname and data.tweak then
-					table.insert(self.jokers, Joker:new(nil, data))
+			for _, joker in pairs(jokers) do
+				if joker.uname and joker.tweak then
+					table.insert(self.jokers, Joker:new(nil, joker))
 				else
-					log(string.format("[Jokermon] Error: Joker \"%s\" is missing data and has been removed to prevent crashes!", data.name or "Unknown"))
+					log(string.format("[Jokermon] Error: Joker \"%s\" is missing data and has been removed to prevent crashes!", joker.name or "Unknown"))
 				end
 			end
 		end
