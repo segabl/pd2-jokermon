@@ -306,12 +306,12 @@ if not Jokermon then
 	end
 
 	function Jokermon:add_panel(key)
-		local hud = self.settings.show_panels and managers.hud:script(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
-		if not hud then
+		local hud_panel = self.settings.show_panels and managers.hud:panel(PlayerBase.PLAYER_INFO_HUD_FULLSCREEN_PD2)
+		if not alive(hud_panel) then
 			return
 		end
 		local joker = self.jokers[key]
-		local panel = JokerPanel:new(hud.panel, self.settings.panel_w)
+		local panel = JokerPanel:new(hud_panel, self.settings.panel_w)
 		panel:update_name(joker.name)
 		panel:update_hp(joker.hp, joker.hp_ratio, true)
 		panel:update_level(joker.level)
