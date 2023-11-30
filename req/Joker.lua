@@ -54,7 +54,8 @@ function Joker:init(unit, data)
 	self.damage = data and (data.damage or data.stats and data.stats.damage) or 0
 	self.shiny = not data and unit:base():has_shiny_effect() or data and data.shiny
 	self.ot = data and data.ot or Steam and Steam:userid()
-	self.wname = not data and (unit:inventory():equipped_unit():base()._old_unit_name or unit:inventory():equipped_unit():name()):key() or data and data.wname
+	local equipped_unit = unit:inventory():equipped_unit()
+	self.wname = not data and alive(equipped_unit) and (equipped_unit:base()._old_unit_name or equipped_unit:name()):key() or data and data.wname
 
 	self:fetch_owner_name()
 	self:calculate_stats()
@@ -131,7 +132,8 @@ function Joker:set_unit(unit)
 		if tweak ~= self.tweak or uname ~= self.uname then
 			log(string.format("[Jokermon] Warning: Unit mismatch! Expected %s (%s), got %s (%s)!", tostring(HopLib:name_provider().UNIT_MAPPIGS[self.uname]), self.tweak, tostring(HopLib:name_provider().UNIT_MAPPIGS[uname]), tweak))
 		end
-		self.wname = self.wname or (unit:inventory():equipped_unit():base()._old_unit_name or unit:inventory():equipped_unit():name()):key()
+		local equipped_unit = unit:inventory():equipped_unit()
+		self.wname = self.wname or alive(equipped_unit) and (equipped_unit:base()._old_unit_name or equipped_unit:name()):key()
 	end
 	self.unit = unit
 end
