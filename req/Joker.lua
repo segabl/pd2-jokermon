@@ -54,8 +54,8 @@ function Joker:init(unit, data)
 	self.damage = data and (data.damage or data.stats and data.stats.damage) or 0
 	self.shiny = not data and unit:base():has_shiny_effect() or data and data.shiny
 	self.ot = data and data.ot or Steam and Steam:userid()
-	local equipped_unit = unit:inventory():equipped_unit()
-	self.wname = not data and alive(equipped_unit) and (equipped_unit:base()._old_unit_name or equipped_unit:name()):key() or data and data.wname
+	local equipped_unit = alive(unit) and unit:inventory():equipped_unit() or nil
+	self.wname = alive(equipped_unit) and (equipped_unit:base()._old_unit_name or equipped_unit:name()):key() or data and data.wname
 
 	self:fetch_owner_name()
 	self:calculate_stats()
