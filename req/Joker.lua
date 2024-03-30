@@ -83,7 +83,7 @@ function Joker:fetch_owner_name()
 		return
 	end
 
-	Joker.OT_NAMES[self.ot] = "pending"
+	Joker.OT_NAMES[self.ot] = "unknown"
 	Steam:http_request("https://steamcommunity.com/profiles/" .. self.ot .. "/?xml=1", function (success, data)
 		Joker.OT_NAMES[self.ot] = success and data:match("<steamID><!%[CDATA%[(.+)%]%]></steamID>") or "unknown"
 	end)
@@ -168,7 +168,7 @@ function Joker:weapon_name()
 		return ""
 	end
 
-	local file = DB:open("unit", ids)
+	local file = DB:has("unit", ids) and DB:open("unit", ids)
 	if not file then
 		Joker.WEAP_NAMES[self.wname] = ""
 		return ""
