@@ -101,6 +101,7 @@
   "Jokermon_menu_flavour_34" : "이것에 대한 충분한 보수를 받지 못합니다",
   "Jokermon_menu_flavour_35" : "비밀 부대의 일부입니다",
   "Jokermon_menu_flavour_36" : "삽에 집착함",
+  "Jokermon_message_unmodded_server" : "This action is not available as the host does not use Jokermon.",
   "Jokermon_message_faint" : "$NAME 기절함!",
   "Jokermon_message_die" : "$NAME 죽음!",
   "Jokermon_message_levelup" : "$NAME 레벨업 $LEVEL!",

@@ -101,6 +101,7 @@
   "Jokermon_menu_flavour_34" : "Erhält zu wenig Lohn für all das",
   "Jokermon_menu_flavour_35" : "Gehört einem geheimen Kult an",
   "Jokermon_menu_flavour_36" : "Ist besessen von Schaufeln",
+  "Jokermon_message_unmodded_server" : "Diese Aktion ist nicht verfügbar da der Host Jokermon nicht nutzt.",
   "Jokermon_message_faint" : "$NAME wurde besiegt!",
   "Jokermon_message_die" : "$NAME ist verstorben!",
   "Jokermon_message_levelup" : "$NAME hat Level $LEVEL erreicht!",

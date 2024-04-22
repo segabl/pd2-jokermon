@@ -5,6 +5,7 @@ if not Jokermon then
 	dofile(ModPath .. "req/Joker.lua")
 	dofile(ModPath .. "req/JokerPanel.lua")
 
+	Jokermon.mod_instance = ModInstance
 	Jokermon.mod_path = ModPath
 	Jokermon.save_path = SavePath
 	Jokermon.settings = {
@@ -37,9 +38,10 @@ if not Jokermon then
 	Jokermon._unit_id_mappings = {}
 	Jokermon._jokers_added = 0
 	Jokermon._joker_index = 1
-	Jokermon._joker_slot = World:make_slot_mask(16)
+	Jokermon._joker_slot = World:make_slot_mask(16, 22)
 	Jokermon._jokermon_key_press_t = 0
 	Jokermon._jokermon_peers = {}
+	Jokermon._modded_server = not Network:is_client()
 
 	local unit_ids = Idstring("unit")
 
@@ -81,6 +83,9 @@ if not Jokermon then
 		if #self.jokers == 0 then
 			return
 		end
+		if not num and not self._modded_server then
+			self:display_message("Jokermon_message_unmodded_server", nil, true)
+		end
 		local index, joker
 		for i = self._joker_index, self._joker_index + #self.jokers do
 			index = ((i - 1) % #self.jokers) + 1
@@ -101,6 +106,9 @@ if not Jokermon then
 		if Network:is_server() then
 			World:delete_unit(unit)
 		else
+			if not self._modded_server then
+				self:display_message("Jokermon_message_unmodded_server", nil, true)
+			end
 			LuaNetworking:SendToPeer(1, "jokermon_retrieve", json.encode({ uid = unit:id() }))
 		end
 	end
@@ -982,13 +990,13 @@ if not Jokermon then
 			return
 		end
 
-		local key = Jokermon._queued_keys[1]
 		local joker
+		local key = table.remove(Jokermon._queued_keys, 1)
 		if key then
 			-- Use existing Jokermon entry
 			joker = Jokermon.jokers[key]
 			joker:set_unit(unit)
-			table.remove(Jokermon._queued_keys, 1)
+			joker:calculate_stats()
 
 			Jokermon:display_message("Jokermon_message_go", { NAME = joker.name })
 			player_unit:sound_source():post_event("grenade_gas_npc_fire")
@@ -1094,6 +1102,12 @@ if not Jokermon then
 	end)
 
 	Hooks:Add("NetworkReceivedData", "NetworkReceivedDataJokermon", function(sender, id, data)
+		if not id:match("^jokermon") then
+			return
+		end
+
+		Jokermon._modded_server = Jokermon._modded_server or sender == 1
+
 		if id == "jokermon_spawn" then
 			data = json.decode(data)
 			return data and Jokermon:spawn(data, nil, LuaNetworking:GetPeers()[sender]:unit())

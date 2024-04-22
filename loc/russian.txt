@@ -101,6 +101,7 @@
   "Jokermon_menu_flavour_34" : "Ему платят недостаточно за всё это",
   "Jokermon_menu_flavour_35" : "Состоит в тайном обществе",
   "Jokermon_menu_flavour_36" : "Одержим лопатами",
+  "Jokermon_message_unmodded_server" : "This action is not available as the host does not use Jokermon.",
   "Jokermon_message_faint" : "$NAME потерял сознание!",
   "Jokermon_message_die" : "$NAME умер!",
   "Jokermon_message_levelup" : "$NAME достиг уровня $LEVEL!",

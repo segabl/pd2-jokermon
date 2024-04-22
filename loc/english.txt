@@ -101,6 +101,7 @@
   "Jokermon_menu_flavour_34" : "Doesn't get paid enough for this",
   "Jokermon_menu_flavour_35" : "Is part of a secret cult",
   "Jokermon_menu_flavour_36" : "Is obsessed with shovels",
+  "Jokermon_message_unmodded_server" : "This action is not available as the host does not use Jokermon.",
   "Jokermon_message_faint" : "$NAME fainted!",
   "Jokermon_message_die" : "$NAME died!",
   "Jokermon_message_levelup" : "$NAME reached level $LEVEL!",

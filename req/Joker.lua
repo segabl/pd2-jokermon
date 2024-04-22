@@ -95,7 +95,7 @@ function Joker:calculate_stats()
 	self.exp_level_next = self:level_to_exp(self.level + 1)
 	self.exp = math.min(self.exp, self.exp_level_next)
 
-	if Jokermon.settings.vanilla then
+	if Jokermon.settings.vanilla or not Jokermon._modded_server then
 		self.hp = tweak_data.character[self.tweak] and tweak_data.character[self.tweak].HEALTH_INIT or 8
 	else
 		self:randomseed()
