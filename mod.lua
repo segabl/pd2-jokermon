@@ -148,6 +148,9 @@ if not Jokermon then
 			local unit = World:spawn_unit(ids, player_unit:position() + Vector3(math.random(-50, 50), math.random(-50, 50), 0), player_unit:rotation())
 			unit:movement():set_team({ id = "law1", foes = {}, friends = {} })
 			unit:brain():set_active(false)
+			unit:character_damage():set_invulnerable(true)
+			unit:character_damage():set_immortal(true)
+			unit:network():send("set_unit_invulnerable", true, true)
 
 			-- Set weapon
 			local weapon_name = joker.wname and self:get_unit_name(joker.wname)
@@ -177,6 +180,9 @@ if not Jokermon then
 							Keepers.joker_names[peer_id] = data.joker.name
 						end
 					end
+					data.unit:character_damage():set_invulnerable(false)
+					data.unit:character_damage():set_immortal(false)
+					data.unit:network():send("set_unit_invulnerable", false, false)
 					data.unit:brain():set_active(true)
 					data.unit:inventory():destroy_all_items()
 					managers.groupai:state():convert_hostage_to_criminal(data.unit, (not data.is_local_player) and data.player_unit)
