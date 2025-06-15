@@ -376,13 +376,13 @@ if not Jokermon then
 		end
 		local jokers_file = self.save_path .. "jokermon.txt"
 		local jokers = io.file_is_readable(jokers_file) and io.load_as_json(jokers_file)
-		if jokers then
+		if type(jokers) == "table" then
 			self.jokers = {}
 			for _, joker in pairs(jokers) do
-				if joker.uname and joker.tweak then
+				if type(joker) == "table" and joker.uname and joker.tweak then
 					table.insert(self.jokers, Joker:new(nil, joker))
 				else
-					log(string.format("[Jokermon] Error: Joker \"%s\" is missing data and has been removed to prevent crashes!", joker.name or "Unknown"))
+					log(string.format("[Jokermon] Error: Joker \"%s\" is missing data and has been removed to prevent crashes!", type(joker) == "table" and joker.uname or "Unknown"))
 				end
 			end
 		end
