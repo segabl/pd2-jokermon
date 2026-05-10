@@ -169,13 +169,14 @@ function Joker:weapon_name()
 	end
 
 	local file = DB:has("unit", ids) and DB:open("unit", ids)
-	if not file then
+	if not file or not alive(file) or file:at_end() then
 		Joker.WEAP_NAMES[self.wname] = ""
 		return ""
 	end
 
-	local unit_data = ScriptSerializer:from_custom_xml(file:read("*a"))
+	local file_data = file:read("*a")
 	file:close()
+	local unit_data = ScriptSerializer:from_custom_xml(file_data)
 
 	local extensions = unit_data and unit_data.extensions
 	if not extensions then
